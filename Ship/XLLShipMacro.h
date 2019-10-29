@@ -9,5 +9,11 @@
 #ifndef XLLShipMacro_h
 #define XLLShipMacro_h
 
+#import "XLLCommandProtocol.h"
+
+#import "xlLCommand.h"
+#import "xlLStitchCommand.h"
+#import "xlLClipCommand.h"
+
 
 #endif /* XLLShipMacro_h */

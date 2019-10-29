@@ -16,6 +16,12 @@
 		5A7C49F82366C09A001D8B2C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49F72366C09A001D8B2C /* main.m */; };
 		5A7C4A022366C09B001D8B2C /* ShipTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A012366C09B001D8B2C /* ShipTests.m */; };
 		5A7C4A0D2366C09B001D8B2C /* ShipUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A0C2366C09B001D8B2C /* ShipUITests.m */; };
+		5A7C4A1F2366C378001D8B2C /* xlLReceiver.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A1E2366C378001D8B2C /* xlLReceiver.m */; };
+		5A7C4A222366C765001D8B2C /* xlLStitchCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A212366C765001D8B2C /* xlLStitchCommand.m */; };
+		5A7C4A282366C968001D8B2C /* xlLShip.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A272366C968001D8B2C /* xlLShip.m */; };
+		5A7C4A2C2366D567001D8B2C /* xlLClipCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A2B2366D567001D8B2C /* xlLClipCommand.m */; };
+		5A7C4A2F2366D814001D8B2C /* xlLCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A2E2366D814001D8B2C /* xlLCommand.m */; };
+		5A7C4A3223682155001D8B2C /* xlLImageCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A3123682155001D8B2C /* xlLImageCommand.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +60,21 @@
 		5A7C4A082366C09B001D8B2C /* ShipUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShipUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A7C4A0C2366C09B001D8B2C /* ShipUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ShipUITests.m; sourceTree = "<group>"; };
 		5A7C4A0E2366C09B001D8B2C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5A7C4A1D2366C378001D8B2C /* xlLReceiver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLReceiver.h; sourceTree = "<group>"; };
+		5A7C4A1E2366C378001D8B2C /* xlLReceiver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLReceiver.m; sourceTree = "<group>"; };
+		5A7C4A202366C765001D8B2C /* xlLStitchCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLStitchCommand.h; sourceTree = "<group>"; };
+		5A7C4A212366C765001D8B2C /* xlLStitchCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLStitchCommand.m; sourceTree = "<group>"; };
+		5A7C4A242366C7CB001D8B2C /* XLLCommandProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XLLCommandProtocol.h; sourceTree = "<group>"; };
+		5A7C4A252366C806001D8B2C /* XLLReceiverProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XLLReceiverProtocol.h; sourceTree = "<group>"; };
+		5A7C4A262366C968001D8B2C /* xlLShip.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLShip.h; sourceTree = "<group>"; };
+		5A7C4A272366C968001D8B2C /* xlLShip.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLShip.m; sourceTree = "<group>"; };
+		5A7C4A292366D170001D8B2C /* XLLShipMacro.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XLLShipMacro.h; sourceTree = "<group>"; };
+		5A7C4A2A2366D567001D8B2C /* xlLClipCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLClipCommand.h; sourceTree = "<group>"; };
+		5A7C4A2B2366D567001D8B2C /* xlLClipCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLClipCommand.m; sourceTree = "<group>"; };
+		5A7C4A2D2366D814001D8B2C /* xlLCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLCommand.h; sourceTree = "<group>"; };
+		5A7C4A2E2366D814001D8B2C /* xlLCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLCommand.m; sourceTree = "<group>"; };
+		5A7C4A3023682155001D8B2C /* xlLImageCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLImageCommand.h; sourceTree = "<group>"; };
+		5A7C4A3123682155001D8B2C /* xlLImageCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLImageCommand.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +136,21 @@
 				5A7C49F32366C09A001D8B2C /* LaunchScreen.storyboard */,
 				5A7C49F62366C09A001D8B2C /* Info.plist */,
 				5A7C49F72366C09A001D8B2C /* main.m */,
+				5A7C4A1D2366C378001D8B2C /* xlLReceiver.h */,
+				5A7C4A1E2366C378001D8B2C /* xlLReceiver.m */,
+				5A7C4A2D2366D814001D8B2C /* xlLCommand.h */,
+				5A7C4A2E2366D814001D8B2C /* xlLCommand.m */,
+				5A7C4A3023682155001D8B2C /* xlLImageCommand.h */,
+				5A7C4A3123682155001D8B2C /* xlLImageCommand.m */,
+				5A7C4A2A2366D567001D8B2C /* xlLClipCommand.h */,
+				5A7C4A2B2366D567001D8B2C /* xlLClipCommand.m */,
+				5A7C4A202366C765001D8B2C /* xlLStitchCommand.h */,
+				5A7C4A212366C765001D8B2C /* xlLStitchCommand.m */,
+				5A7C4A242366C7CB001D8B2C /* XLLCommandProtocol.h */,
+				5A7C4A252366C806001D8B2C /* XLLReceiverProtocol.h */,
+				5A7C4A262366C968001D8B2C /* xlLShip.h */,
+				5A7C4A272366C968001D8B2C /* xlLShip.m */,
+				5A7C4A292366D170001D8B2C /* XLLShipMacro.h */,
 			);
 			path = Ship;
 			sourceTree = "<group>";
@@ -267,9 +303,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A7C4A282366C968001D8B2C /* xlLShip.m in Sources */,
+				5A7C4A1F2366C378001D8B2C /* xlLReceiver.m in Sources */,
+				5A7C4A3223682155001D8B2C /* xlLImageCommand.m in Sources */,
+				5A7C4A2C2366D567001D8B2C /* xlLClipCommand.m in Sources */,
 				5A7C49ED2366C09A001D8B2C /* ViewController.m in Sources */,
 				5A7C49E72366C09A001D8B2C /* AppDelegate.m in Sources */,
 				5A7C49F82366C09A001D8B2C /* main.m in Sources */,
+				5A7C4A2F2366D814001D8B2C /* xlLCommand.m in Sources */,
+				5A7C4A222366C765001D8B2C /* xlLStitchCommand.m in Sources */,
 				5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

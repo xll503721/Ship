@@ -6,8 +6,8 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "XLLReceiver.h"
+#import "xlLReceiver.h"
 
-@implementation XLLReceiver
+@implementation xlLReceiver
 
 @end

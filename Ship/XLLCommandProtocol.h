@@ -7,10 +7,20 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <AVFoundation/AVFoundation.h>
+#import "XLLReceiverProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol XLLCommandProtocol <NSObject>
+
+@property (nonatomic, readonly) id<XLLReceiverProtocol> receiver;
+@property (nonatomic, readonly) id<XLLCommandProtocol> command;
+
+@property (nonatomic, readonly) AVAssetWriter *assetWriter;
+@property (nonatomic, readonly) AVAsset *asset;
+
+- (void)execute:(AVAsset *)asset;
 
 @end
 

@@ -8,6 +8,31 @@
 
 #import "xlLClipCommand.h"
 
+@interface xlLClipCommand ()
+
+@end
+
 @implementation xlLClipCommand
+
+- (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver videoURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond
+{
+    self = [super initWithReceiver:receiver];
+    if (self) {
+        
+    }
+    return self;
+}
+
+- (instancetype)initWithVideoURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
+    self = [super init];
+    if (self) {
+        
+    }
+    return self;
+}
+
+- (void)execute:(AVAsset *)asset {
+    
+}
 
 @end
