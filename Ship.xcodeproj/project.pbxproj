@@ -22,6 +22,8 @@
 		5A7C4A2C2366D567001D8B2C /* xlLClipCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A2B2366D567001D8B2C /* xlLClipCommand.m */; };
 		5A7C4A2F2366D814001D8B2C /* xlLCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A2E2366D814001D8B2C /* xlLCommand.m */; };
 		5A7C4A3223682155001D8B2C /* xlLImageCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C4A3123682155001D8B2C /* xlLImageCommand.m */; };
+		5A8752DA23699B0600091902 /* xlLWaterMarkCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A8752D923699B0600091902 /* xlLWaterMarkCommand.m */; };
+		5A8752DD23699C8F00091902 /* xlLTransitionCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A8752DC23699C8F00091902 /* xlLTransitionCommand.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +77,10 @@
 		5A7C4A2E2366D814001D8B2C /* xlLCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLCommand.m; sourceTree = "<group>"; };
 		5A7C4A3023682155001D8B2C /* xlLImageCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLImageCommand.h; sourceTree = "<group>"; };
 		5A7C4A3123682155001D8B2C /* xlLImageCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLImageCommand.m; sourceTree = "<group>"; };
+		5A8752D823699B0600091902 /* xlLWaterMarkCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLWaterMarkCommand.h; sourceTree = "<group>"; };
+		5A8752D923699B0600091902 /* xlLWaterMarkCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLWaterMarkCommand.m; sourceTree = "<group>"; };
+		5A8752DB23699C8F00091902 /* xlLTransitionCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLTransitionCommand.h; sourceTree = "<group>"; };
+		5A8752DC23699C8F00091902 /* xlLTransitionCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLTransitionCommand.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +152,10 @@
 				5A7C4A2B2366D567001D8B2C /* xlLClipCommand.m */,
 				5A7C4A202366C765001D8B2C /* xlLStitchCommand.h */,
 				5A7C4A212366C765001D8B2C /* xlLStitchCommand.m */,
+				5A8752D823699B0600091902 /* xlLWaterMarkCommand.h */,
+				5A8752D923699B0600091902 /* xlLWaterMarkCommand.m */,
+				5A8752DB23699C8F00091902 /* xlLTransitionCommand.h */,
+				5A8752DC23699C8F00091902 /* xlLTransitionCommand.m */,
 				5A7C4A242366C7CB001D8B2C /* XLLCommandProtocol.h */,
 				5A7C4A252366C806001D8B2C /* XLLReceiverProtocol.h */,
 				5A7C4A262366C968001D8B2C /* xlLShip.h */,
@@ -310,6 +320,8 @@
 				5A7C49ED2366C09A001D8B2C /* ViewController.m in Sources */,
 				5A7C49E72366C09A001D8B2C /* AppDelegate.m in Sources */,
 				5A7C49F82366C09A001D8B2C /* main.m in Sources */,
+				5A8752DD23699C8F00091902 /* xlLTransitionCommand.m in Sources */,
+				5A8752DA23699B0600091902 /* xlLWaterMarkCommand.m in Sources */,
 				5A7C4A2F2366D814001D8B2C /* xlLCommand.m in Sources */,
 				5A7C4A222366C765001D8B2C /* xlLStitchCommand.m in Sources */,
 				5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */,

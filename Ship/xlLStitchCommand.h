@@ -7,13 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "XLLCommandProtocol.h"
-#import "XLLReceiverProtocol.h"
 #import "xlLCommand.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface xlLStitchCommand : xlLCommand <XLLCommandProtocol>
+@interface xlLStitchCommand : xlLCommand
 
 - (instancetype)initWithCommand:(id<XLLCommandProtocol>)command videoURL:(NSURL *)URL;
 

@@ -10,6 +10,9 @@
 
 @interface xlLClipCommand ()
 
+@property (nonatomic, assign) NSTimeInterval fromSecond;
+@property (nonatomic, assign) NSTimeInterval toSecond;
+
 @end
 
 @implementation xlLClipCommand
@@ -34,7 +37,16 @@
 - (void)execute:(AVMutableComposition *)asset {
     [super execute:asset];
     
-    NSLog(@"%@:%@",[self class],NSStringFromSelector(_cmd));
+    if ([asset tracksWithMediaType:AVMediaTypeVideo].count > 0 && [asset tracksWithMediaType:AVMediaTypeAudio].count > 0) {
+        AVAssetTrack *assetVideoTrack = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
+        AVAssetTrack *assetAudioTrack = [asset tracksWithMediaType:AVMediaTypeAudio].firstObject;
+        
+        AVMutableCompositionTrack *mutableVideoCompositionTrack = [asset mutableTrackCompatibleWithTrack:assetVideoTrack];
+        [mutableVideoCompositionTrack removeTimeRange:CMTimeRangeMake(CMTimeMake(self.fromSecond, 1), CMTimeMake(self.toSecond, 1))];
+        
+        AVMutableCompositionTrack *mutableAudioCompositionTrack = [asset mutableTrackCompatibleWithTrack:assetAudioTrack];
+        [mutableAudioCompositionTrack removeTimeRange:CMTimeRangeMake(CMTimeMake(self.fromSecond, 1), CMTimeMake(self.toSecond, 1))];
+    }
 }
 
 @end
