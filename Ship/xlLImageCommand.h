@@ -7,14 +7,14 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import "xlLCommand.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface xlLImageCommand : xlLCommand
 
-- (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver images:(NSArray<UIImage *> *)images;
-- (instancetype)initWithImages:(NSArray<UIImage *> *)images;
+- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command images:(NSArray<UIImage *> *)images;
 
 @end
 

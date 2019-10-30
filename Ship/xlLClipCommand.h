@@ -13,8 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface xlLClipCommand : xlLCommand
 
-- (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver videoURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond;
-- (instancetype)initWithVideoURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond;
+- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond;
 
 @end
 

@@ -9,13 +9,14 @@
 #import <Foundation/Foundation.h>
 #import "XLLCommandProtocol.h"
 #import "XLLReceiverProtocol.h"
+#import "xlLCommand.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface xlLStitchCommand : NSObject <XLLCommandProtocol>
+@interface xlLStitchCommand : xlLCommand <XLLCommandProtocol>
 
-- (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver frontVideoURL:(NSURL *)fURL videoURL:(NSURL *)URL;
-- (instancetype)initWithFrontVideoURL:(NSURL *)fURL videoURL:(NSURL *)URL;
+- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command videoURL:(NSURL *)URL;
+
 
 @end
 

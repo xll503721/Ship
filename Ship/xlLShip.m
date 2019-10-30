@@ -40,18 +40,6 @@
     return self;
 }
 
-- (instancetype)initWithImages:(NSArray<UIImage *> *)images {
-    
-    self = [super init];
-    if (self) {
-        _commands = @[].mutableCopy;
-        
-        xlLCommand *command = [[xlLCommand alloc] initWithImages:images];
-        [_commands addObject:command];
-    }
-    return self;
-}
-
 //static XLLShip *defaultShip = nil;
 //
 //+ (instancetype)defaultShip {
@@ -92,8 +80,8 @@
 }
 
 - (xlLShip *)clipViedoWithURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
-    xlLClipCommand *command = [[xlLClipCommand alloc] initWithVideoURL:URL fromSecond:fromSecond toSecond:toSecond];
-    [self.commands addObject:command];
+//    xlLClipCommand *command = [[xlLClipCommand alloc] initWithVideoURL:URL fromSecond:fromSecond toSecond:toSecond];
+//    [self.commands addObject:command];
     return self;
 }
 
@@ -101,8 +89,10 @@
 
 - (void)executeExport {
     [self.commands enumerateObjectsUsingBlock:^(id<XLLCommandProtocol>  _Nonnull command, NSUInteger idx, BOOL * _Nonnull stop) {
-        [command execute:command.asset];
+        [command execute:command.mutableComposition];
     }];
+    
+    [self.commands.firstObject execute:nil];
 }
 
 @end

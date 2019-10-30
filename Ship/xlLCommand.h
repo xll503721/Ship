@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver;
 - (instancetype)initWithVideoURL:(NSURL *)URL;
 
-- (AVMutableComposition *)recompositionVideoWithAsset:(AVAsset *)asset;
+- (void)recompositionVideoWithAsset:(AVAsset *)asset;
 
 @end
 

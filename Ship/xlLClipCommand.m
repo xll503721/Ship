@@ -14,7 +14,7 @@
 
 @implementation xlLClipCommand
 
-- (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver videoURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond
+- (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond
 {
     self = [super initWithReceiver:receiver];
     if (self) {
@@ -23,16 +23,18 @@
     return self;
 }
 
-- (instancetype)initWithVideoURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
-    self = [super init];
+- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
+    self = [super initWithCommand:command];
     if (self) {
         
     }
     return self;
 }
 
-- (void)execute:(AVAsset *)asset {
+- (void)execute:(AVMutableComposition *)asset {
+    [super execute:asset];
     
+    NSLog(@"%@:%@",[self class],NSStringFromSelector(_cmd));
 }
 
 @end

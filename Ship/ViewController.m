@@ -8,6 +8,10 @@
 
 #import "ViewController.h"
 #import "xlLShip.h"
+#import "xlLCommand.h"
+#import "xlLStitchCommand.h"
+#import "xlLImageCommand.h"
+#import "xlLClipCommand.h"
 
 @interface ViewController ()
 
@@ -25,17 +29,26 @@
 //    [ship clipViedoWithURL:[NSURL URLWithString:@""] fromSecond:0 toSecond:0];
 //    [ship executeExport];
     
-    AVAsset *asset = [AVAsset assetWithURL:[NSURL URLWithString:@""]];
     
-    AVAssetTrack *assetTrack = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
+//    {
+//        xlLCommand *command = [[xlLCommand alloc] initWithVideoURL:[NSURL URLWithString:@""]];
+//        xlLStitchCommand *stitchCommand = [[xlLStitchCommand alloc] initWithVideoURL:[NSURL URLWithString:@""]];
+//        [stitchCommand addInternalCommand:command];
+//
+//        [stitchCommand execute:stitchCommand.mutableComposition];
+//    }
     
-    NSError *error;
-    AVAssetReader *assetReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
-    AVAssetReaderTrackOutput *assetReaderTrackOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:assetTrack outputSettings:@{}];
-    
-    [assetReader addOutput:assetReaderTrackOutput];
-    [assetReader startReading];
-    
+    {
+        xlLCommand *command = xlLCommand.new;
+        xlLImageCommand *imageCommand = [[xlLImageCommand alloc] initWithCommand:command images:@[]];
+        xlLClipCommand *clipCommand = [[xlLClipCommand alloc] initWithCommand:imageCommand fromSecond:0 toSecond:0];
+        xlLStitchCommand *stitchCommand = [[xlLStitchCommand alloc] initWithCommand:clipCommand videoURL:[NSURL URLWithString:@""]];
+        
+        [stitchCommand processWithCompleteHandle:^(AVAsset * _Nonnull asset) {
+            
+        }];
+        
+    }
     
 }
 
