@@ -44,6 +44,7 @@
     self = [super init];
     if (self) {
         self.command = command;
+        self.mutableComposition = command.mutableComposition;
     }
     return self;
 }
@@ -60,14 +61,18 @@
 }
 
 - (void)processWithCompleteHandle:(ProcessComplete)handler {
-    [self execute:self.mutableComposition];
-    
     self.handler = handler;
+    
+    [self execute:self.mutableComposition];
 }
 
 - (void)execute:(AVMutableComposition *)asset {
     if (self.command) {
         [self.command execute:asset];
+    }
+    
+    if (self.handler) {
+        self.handler(self.mutableComposition);
     }
 }
 

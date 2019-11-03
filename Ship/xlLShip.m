@@ -69,8 +69,8 @@
 #pragma mark - edit
 
 - (xlLShip *)stitchWithFrontVideoURL:(NSURL *)fURL videoURL:(NSURL *)URL {
-    xlLStitchCommand *command = [[xlLStitchCommand alloc] initWithFrontVideoURL:fURL videoURL:URL];
-    [self.commands addObject:command];
+//    xlLStitchCommand *command = [[xlLStitchCommand alloc] initWithFrontVideoURL:fURL videoURL:URL];
+//    [self.commands addObject:command];
     return self;
 }
 
