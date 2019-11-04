@@ -13,9 +13,13 @@
 @property (nonatomic, strong) id<XLLReceiverProtocol> receiver;
 @property (nonatomic, strong) AVAssetWriter *assetWriter;
 @property (nonatomic, strong) AVAsset *asset;
-@property (nonatomic, strong) AVMutableComposition *mutableComposition;
+
 @property (nonatomic, strong) id<XLLCommandProtocol> command;
 @property (nonatomic, copy) ProcessComplete handler;
+
+@property (nonatomic, strong) AVMutableComposition *mutableComposition;
+@property (nonatomic, strong) AVMutableVideoComposition *videoComposition;
+@property (nonatomic, strong) AVMutableAudioMix *audioMix;
 
 @end
 
@@ -63,17 +67,17 @@
 - (void)processWithCompleteHandle:(ProcessComplete)handler {
     self.handler = handler;
     
-    [self execute:self.mutableComposition];
+    [self execute:self.mutableComposition videoComposition:self.videoComposition audioMix:self.audioMix];
 }
 
-- (void)execute:(AVMutableComposition *)asset {
+- (void)execute:(AVMutableComposition *)asset videoComposition:(AVMutableVideoComposition * _Nullable)videoComposition audioMix:(AVMutableAudioMix * _Nullable)audioMix {
     if (self.command) {
-        [self.command execute:asset];
+        [self.command execute:asset videoComposition:self.videoComposition audioMix:self.audioMix];
     }
     
-    if (self.handler) {
-        self.handler(self.mutableComposition);
-    }
+//    if (self.handler) {
+//        self.handler(self.mutableComposition);
+//    }
 }
 
 - (void)recompositionVideoWithAsset:(AVAsset *)asset {
@@ -105,6 +109,26 @@
             }
         }
     }
+}
+
+- (void)exportMediaToURL:(NSURL *)URL completeHandle:(dispatch_block_t)complete {
+    static NSDateFormatter *kDateFormatter;
+    if (!kDateFormatter) {
+        kDateFormatter = [[NSDateFormatter alloc] init];
+        kDateFormatter.dateStyle = NSDateFormatterMediumStyle;
+        kDateFormatter.timeStyle = NSDateFormatterShortStyle;
+    }
+    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:self.mutableComposition presetName:AVAssetExportPresetHighestQuality];
+    // Set the desired output URL for the file created by the export process.
+    exporter.outputURL = URL;
+    // Set the output file type to be a QuickTime movie.
+    exporter.outputFileType = AVFileTypeQuickTimeMovie;
+    exporter.shouldOptimizeForNetworkUse = YES;
+    exporter.videoComposition = self.videoComposition;
+    // Asynchronously export the composition to a video file and save this file to the camera roll once export completes.
+    [exporter exportAsynchronouslyWithCompletionHandler:^{
+        
+    }];
 }
 
 #pragma mark - getter

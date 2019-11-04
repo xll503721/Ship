@@ -17,10 +17,24 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol xlLPlayerViewDeleate <NSObject>
 
 @optional
+//loading
+
+/// when AVPlayer status become AVPlayerItemStatusReadyToPlay
+/// @param playerView view
+/// @param duration video total duration
 - (void)playerView:(xlLPlayerView *)playerView readyToPlayWithDuration:(Float64)duration;
+
+/// when AVPlayer status become AVPlayerItemStatusFailed or AVPlayerItemStatusUnknown
+/// @param playerView view
+/// @param error error description
 - (void)playerView:(xlLPlayerView *)playerView failToPlayWithError:(NSError *)error;
 
-- (void)playerView:(xlLPlayerView *)playerView playingWithProgress:(CGFloat)progress;
+//playing
+
+- (void)playerView:(xlLPlayerView *)playerView playingWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
+- (void)playerView:(xlLPlayerView *)playerView playEndWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
+- (void)playerView:(xlLPlayerView *)playerView playingOrPauseStatusChange:(BOOL)isPlaying;
+- (void)playerView:(xlLPlayerView *)playerView playingWithLoadedBuffer:(BOOL)isPlaying;
 
 @end
 
@@ -28,10 +42,19 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, weak) id<xlLPlayerViewDeleate> delegate;
 
-@property (nonatomic, assign) NSInteger loopCount;
+/// set loop play
+@property (nonatomic, assign) NSInteger loopPlayCount;
+
+/// set Overlap auto to hide
+@property (nonatomic, assign) BOOL isOverlapViewAutoHide;
+
+/// when AVPlayer status become AVPlayerItemStatusReadyToPlay, will call [player play]
+@property (nonatomic, assign) BOOL autoPlayWhenReadyToPlay;
+@property (nonatomic, readonly) BOOL isPlaying;
 
 @property (nonatomic, strong) NSURL *URL;
 @property (nonatomic, strong) AVAsset *asset;
+
 
 - (instancetype)initWithURL:(NSURL *)URL;
 - (instancetype)initWithAsset:(AVAsset *)asset;
@@ -39,6 +62,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)play;
 - (void)pause;
+
+- (void)setOverlapView:(UIView *)view;
 
 @end
 

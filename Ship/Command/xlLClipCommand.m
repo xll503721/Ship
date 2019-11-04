@@ -34,8 +34,8 @@
     return self;
 }
 
-- (void)execute:(AVMutableComposition *)asset {
-    [super execute:asset];
+- (void)execute:(AVMutableComposition *)asset videoComposition:(AVMutableVideoComposition * _Nullable)videoComposition audioMix:(AVMutableAudioMix * _Nullable)audioMix {
+    [super execute:asset videoComposition:videoComposition audioMix:audioMix];
     
     if ([asset tracksWithMediaType:AVMediaTypeVideo].count > 0 && [asset tracksWithMediaType:AVMediaTypeAudio].count > 0) {
         AVAssetTrack *assetVideoTrack = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;

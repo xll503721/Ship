@@ -88,11 +88,11 @@
 #pragma mark - action
 
 - (void)executeExport {
-    [self.commands enumerateObjectsUsingBlock:^(id<XLLCommandProtocol>  _Nonnull command, NSUInteger idx, BOOL * _Nonnull stop) {
-        [command execute:command.mutableComposition];
-    }];
+//    [self.commands enumerateObjectsUsingBlock:^(id<XLLCommandProtocol>  _Nonnull command, NSUInteger idx, BOOL * _Nonnull stop) {
+//        [command execute:command.mutableComposition videoComposition:command.videoComposition audioMix:command.audioMix];
+//    }];
     
-    [self.commands.firstObject execute:nil];
+    [self.commands.firstObject execute:self.commands.firstObject.mutableComposition videoComposition:nil audioMix:nil];
 }
 
 @end

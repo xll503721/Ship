@@ -12,6 +12,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface xlLWaterMarkCommand : xlLCommand
 
+- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command image:(UIImage *)image;
+- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command string:(NSString *)string;
+- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command waterMarkLayer:(CALayer *)layer;
+
 @end
 
 NS_ASSUME_NONNULL_END

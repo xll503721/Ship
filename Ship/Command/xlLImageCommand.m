@@ -36,8 +36,8 @@ static NSString *kxlLImageCommandVideoName = @"imageCommandVideo";
     return self;
 }
 
-- (void)execute:(AVMutableComposition *)asset {
-    [super execute:asset];
+- (void)execute:(AVMutableComposition *)asset videoComposition:(AVMutableVideoComposition * _Nullable)videoComposition audioMix:(AVMutableAudioMix * _Nullable)audioMix {
+    [super execute:asset videoComposition:videoComposition audioMix:audioMix];
     
     if (!(self.images.count > 0)) {
         return;
@@ -86,7 +86,7 @@ static NSString *kxlLImageCommandVideoName = @"imageCommandVideo";
                 [assetWriterInput markAsFinished];
                 [assetWriter finishWritingWithCompletionHandler:^{
                     xlLStitchCommand *stitchCommand = [[xlLStitchCommand alloc] initWithVideoURL:cacheURL];
-                    [stitchCommand execute:self.mutableComposition];
+//                    [stitchCommand execute:self.mutableComposition];
                 }];
                 break;
             }

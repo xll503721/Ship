@@ -19,6 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)recompositionVideoWithAsset:(AVAsset *)asset;
 
+- (void)exportMediaToURL:(NSURL *)URL completeHandle:(dispatch_block_t)complete;
+
 @end
 
 NS_ASSUME_NONNULL_END

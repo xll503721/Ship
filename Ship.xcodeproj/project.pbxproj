@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5A36D15D236ECFE600776A7A /* xlLExportCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A36D15C236ECFE600776A7A /* xlLExportCommand.m */; };
 		5A7C49E72366C09A001D8B2C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49E62366C09A001D8B2C /* AppDelegate.m */; };
 		5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49E92366C09A001D8B2C /* SceneDelegate.m */; };
 		5A7C49ED2366C09A001D8B2C /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49EC2366C09A001D8B2C /* ViewController.m */; };
@@ -48,6 +49,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5A36D15B236ECFE600776A7A /* xlLExportCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLExportCommand.h; sourceTree = "<group>"; };
+		5A36D15C236ECFE600776A7A /* xlLExportCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLExportCommand.m; sourceTree = "<group>"; };
 		5A7C49E22366C09A001D8B2C /* Ship.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ship.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A7C49E52366C09A001D8B2C /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5A7C49E62366C09A001D8B2C /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -202,6 +205,8 @@
 				5A8752D923699B0600091902 /* xlLWaterMarkCommand.m */,
 				5A8752DB23699C8F00091902 /* xlLTransitionCommand.h */,
 				5A8752DC23699C8F00091902 /* xlLTransitionCommand.m */,
+				5A36D15B236ECFE600776A7A /* xlLExportCommand.h */,
+				5A36D15C236ECFE600776A7A /* xlLExportCommand.m */,
 			);
 			path = Command;
 			sourceTree = "<group>";
@@ -357,6 +362,7 @@
 				5A7C49F82366C09A001D8B2C /* main.m in Sources */,
 				5A8752DD23699C8F00091902 /* xlLTransitionCommand.m in Sources */,
 				5A8752DA23699B0600091902 /* xlLWaterMarkCommand.m in Sources */,
+				5A36D15D236ECFE600776A7A /* xlLExportCommand.m in Sources */,
 				5A7C4A2F2366D814001D8B2C /* xlLCommand.m in Sources */,
 				5A7C4A222366C765001D8B2C /* xlLStitchCommand.m in Sources */,
 				5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */,
@@ -530,7 +536,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5KL6DMD77G;
+				DEVELOPMENT_TEAM = 39944VQMR4;
 				INFOPLIST_FILE = Ship/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -547,7 +553,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5KL6DMD77G;
+				DEVELOPMENT_TEAM = 39944VQMR4;
 				INFOPLIST_FILE = Ship/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

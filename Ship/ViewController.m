@@ -43,14 +43,13 @@
     {
         xlLCommand *command = [[xlLCommand alloc] initWithVideoURL:[NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip1" ofType:@"m4v"]]];
         xlLStitchCommand *stitchCommand = [[xlLStitchCommand alloc] initWithCommand:command videoURL:[NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip2" ofType:@"mov"]]];
-        [stitchCommand processWithCompleteHandle:^(AVAsset * _Nonnull asset) {
+        [stitchCommand processWithCompleteHandle:^(AVAsset * _Nonnull asset, AVMutableVideoComposition * _Nullable videoComposition, AVMutableAudioMix * _Nullable audioMix) {
             
         }];
         
-        
-        self.playerView = [[xlLPlayerView alloc] initWithAsset:stitchCommand.mutableComposition];
+        self.playerView = [[xlLPlayerView alloc] initWithAsset:stitchCommand.mutableComposition videoComposition:stitchCommand.videoComposition audioMix:stitchCommand.audioMix];
         self.playerView.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height / 2);
-        self.playerView.backgroundColor = [UIColor redColor];
+        self.playerView.backgroundColor = [UIColor lightGrayColor];
         [self.view addSubview:self.playerView];
 
         [self.playerView play];
