@@ -9,6 +9,8 @@
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 #import <UIKit/UIKit.h>
+#import <objc/runtime.h>
+#import <objc/message.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -62,8 +64,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)play;
 - (void)pause;
+- (void)seekToTime:(CMTime)time completionHandler:(void (^)(BOOL finished))completionHandler;
 
 - (void)setOverlapView:(UIView *)view;
+
+@end
+
+@interface xlLPlayerView (XLAutoLoad)
+
+- (void)autoLoadWithScrollView:(UIScrollView *)scrollView;
 
 @end
 

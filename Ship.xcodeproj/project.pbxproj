@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5A0FC0E923716ADB00E9FBA4 /* TableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */; };
 		5A36D15D236ECFE600776A7A /* xlLExportCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A36D15C236ECFE600776A7A /* xlLExportCommand.m */; };
 		5A7C49E72366C09A001D8B2C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49E62366C09A001D8B2C /* AppDelegate.m */; };
 		5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49E92366C09A001D8B2C /* SceneDelegate.m */; };
@@ -49,6 +50,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5A0FC0E723716ADB00E9FBA4 /* TableViewCell.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TableViewCell.h; sourceTree = "<group>"; };
+		5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TableViewCell.m; sourceTree = "<group>"; };
 		5A36D15B236ECFE600776A7A /* xlLExportCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xlLExportCommand.h; sourceTree = "<group>"; };
 		5A36D15C236ECFE600776A7A /* xlLExportCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = xlLExportCommand.m; sourceTree = "<group>"; };
 		5A7C49E22366C09A001D8B2C /* Ship.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ship.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -170,6 +173,8 @@
 				5A7C4A292366D170001D8B2C /* XLLShipMacro.h */,
 				5AAC6D46236E5F9A00A20B43 /* xlLPlayerView.h */,
 				5AAC6D47236E5F9A00A20B43 /* xlLPlayerView.m */,
+				5A0FC0E723716ADB00E9FBA4 /* TableViewCell.h */,
+				5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */,
 			);
 			path = Ship;
 			sourceTree = "<group>";
@@ -365,6 +370,7 @@
 				5A36D15D236ECFE600776A7A /* xlLExportCommand.m in Sources */,
 				5A7C4A2F2366D814001D8B2C /* xlLCommand.m in Sources */,
 				5A7C4A222366C765001D8B2C /* xlLStitchCommand.m in Sources */,
+				5A0FC0E923716ADB00E9FBA4 /* TableViewCell.m in Sources */,
 				5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */,
 				5AAC6D48236E5F9A00A20B43 /* xlLPlayerView.m in Sources */,
 			);
@@ -538,6 +544,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 39944VQMR4;
 				INFOPLIST_FILE = Ship/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -555,6 +562,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 39944VQMR4;
 				INFOPLIST_FILE = Ship/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

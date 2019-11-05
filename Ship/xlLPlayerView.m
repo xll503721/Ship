@@ -8,7 +8,11 @@
 
 #import "xlLPlayerView.h"
 
+
 static CGFloat kXlLPlayerToobarViewHeight = 30;
+static const char kXlLPlayerViewSelf;
+static const char kXlLPlayerViewCurrentPlaying;
+static const char kXlLPlayerViewScrollViewDelegate;
 
 @interface xlLPlayerContentView : UIView
 
@@ -216,8 +220,9 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     }];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemPlaybackStalled:) name:AVPlayerItemPlaybackStalledNotification object:nil];
-    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemPlaybackStalled:) name:AVPlayerItemPlaybackStalledNotification object:self.playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppResignActive:) name:UIApplicationWillResignActiveNotification object:self.playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:self.playerItem];
 }
 
 - (void)remoeObserver {
@@ -248,6 +253,11 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 #pragma mark - Observer
 
 - (void)onPlayerItemDidPlayToEndTime:(NSNotification *)notification {
+    AVPlayerItem *playerItem = notification.object;
+    if (playerItem != self.playerItem) {
+        return;
+    }
+    
     if (self.delegate && [self.delegate respondsToSelector:@selector(playerView:playingWithProgress:currentTime:)]) {
         CGFloat currentTime = self.playerItem.currentTime.value / self.playerItem.currentTime.timescale;
         CGFloat progress = CMTimeGetSeconds(self.player.currentItem.currentTime) / CMTimeGetSeconds(self.player.currentItem.duration);
@@ -257,6 +267,19 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     if (self.loopPlayCount > 0) {
         self.loopPlayCount--;
         [self pause];
+        [self seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
+            
+        }];
+        [self play];
+    }
+}
+
+- (void)onAppResignActive:(NSNotification *)notification {
+    [self pause];
+}
+
+- (void)onAppBecomeActive:(NSNotification *)notification {
+    if (self.isPlaying) {
         [self play];
     }
 }
@@ -282,6 +305,10 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     [self.player pause];
 }
 
+- (void)seekToTime:(CMTime)time completionHandler:(void (^)(BOOL finished))completionHandler {
+    [self.player seekToTime:time completionHandler:completionHandler];
+}
+
 - (void)setOverlapView:(UIView *)view {
     [self.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     [self.contentView addSubview:view];
@@ -293,7 +320,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     if (![URL.path isEqualToString:_URL.path]) {
         _URL = URL;
         self.playerItem = [AVPlayerItem playerItemWithURL:_URL];
-        [self reload];
+        [self commonInit];
     }
 }
 
@@ -335,7 +362,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
             
             self.duration = (NSInteger)round(CMTimeGetSeconds(self.playerItem.duration));
             if (self.autoPlayWhenReadyToPlay) {
-                [self.player play];
+//                [self.player play];
             }
         }
         else if (status == AVPlayerItemStatusFailed || status == AVPlayerItemStatusUnknown) {
@@ -373,7 +400,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         if (self.delegate && [self.delegate respondsToSelector:@selector(playerView:playingOrPauseStatusChange:)]) {
             [self.delegate playerView:self playingOrPauseStatusChange:YES];
         }
-        [self.player play];
+//        [self.player play];
     };
 }
 
@@ -389,5 +416,157 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (BOOL)isPlaying {
     return self.player.rate == 0;
 }
+
+@end
+
+
+@implementation xlLPlayerView (XLAutoLoad)
+
+- (void)autoLoadWithScrollView:(UIScrollView *)scrollView {
+    
+    objc_setAssociatedObject(self, &kXlLPlayerViewScrollViewDelegate, scrollView.delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    
+    NSMapTable<NSString *, xlLPlayerView *> *playViews = objc_getAssociatedObject(scrollView.delegate, &kXlLPlayerViewSelf);
+    if (!playViews) {
+        playViews = [NSMapTable mapTableWithKeyOptions:NSMapTableCopyIn valueOptions:NSMapTableWeakMemory];
+        objc_setAssociatedObject(scrollView.delegate, &kXlLPlayerViewSelf, playViews, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    
+    
+    [playViews setObject:self forKey:[NSString stringWithFormat:@"%p", self]];
+    
+    [self createSubClassWithObject:scrollView.delegate];
+    [self hookWithObject:scrollView.delegate Selector:@selector(scrollViewDidScroll:) imp:newScrollViewDidScroll];
+    [self hookWithObject:scrollView.delegate Selector:@selector(scrollViewDidEndDecelerating:) imp:newScrollViewDidEndDecelerating];
+    [self hookWithObject:scrollView.delegate Selector:@selector(scrollViewDidEndDragging:willDecelerate:) imp:newScrollViewDidEndDragging];
+}
+
+- (void)createSubClassWithObject:(NSObject *)o {
+    NSString *oldClass = NSStringFromClass(object_getClass(o));
+    if (![oldClass hasPrefix:@"BRPlayView_"]) {
+        NSString *newClass = [NSString stringWithFormat:@"BRPlayView_%@",oldClass];
+        Class subClass = objc_lookUpClass(newClass.UTF8String);
+        if (!subClass) {
+            subClass = objc_allocateClassPair(object_getClass(o), newClass.UTF8String, 0);
+            objc_registerClassPair(subClass);
+        }
+        object_setClass(o, subClass);
+    }
+}
+
+- (void)hookWithObject:(NSObject *)o Selector:(SEL)selector imp:(void *)imp {
+    
+    NSString *subClassName = NSStringFromClass(object_getClass(o));
+    if (![subClassName hasPrefix:@"BRPlayView_"]) {
+        return;
+    }
+    
+    Class subClass = object_getClass(o);
+    Method superSelector = class_getInstanceMethod([o superclass], selector);
+    const char *selectorTypes = method_getTypeEncoding(superSelector);
+    class_addMethod(subClass, selector, (IMP)imp, selectorTypes);
+}
+
+void newScrollViewDidEndDecelerating(id self, SEL _cmd, void *parameter) {
+    UIScrollView *scrollView = (__bridge UIScrollView *)parameter;
+    if (![scrollView respondsToSelector:@selector(delegate)]) {
+        return;
+    }
+    
+    struct objc_super superClass = {
+        .receiver = self,
+        .super_class = class_getSuperclass(object_getClass(scrollView.delegate))
+    };
+    
+    ((void (*) (id, SEL, void *))(void *)objc_msgSendSuper)((__bridge id)(&superClass), _cmd, parameter);
+    
+    
+    NSMapTable<NSString *, xlLPlayerView *> *playViews = objc_getAssociatedObject(scrollView.delegate, &kXlLPlayerViewSelf);
+        xlLPlayerView *currentPlayingView = objc_getAssociatedObject(scrollView.delegate, &kXlLPlayerViewCurrentPlaying);
+        
+        __block xlLPlayerView *willPlayingView = currentPlayingView;
+        __block xlLPlayerView *topPlayingView = nil;
+        __block CGFloat top = 0;
+        NSArray<xlLPlayerView *> *allPlayViews = [[playViews objectEnumerator] allObjects];
+        [allPlayViews enumerateObjectsUsingBlock:^(xlLPlayerView * _Nonnull view, NSUInteger idx, BOOL * _Nonnull stop) {
+
+            CGRect frame = view.frame;
+            if ([scrollView isKindOfClass:[UITableView class]]) {
+                frame = [view convertRect:view.frame toView:scrollView];
+            }
+            
+    //        NSLog(@"view.frame: %@, add: %p", [NSValue valueWithCGRect:frame], view);
+    //        NSLog(@"scrollview: %@", [NSValue valueWithCGPoint:scrollView.contentOffset]);
+    //        NSLog(@"idx:%ld", idx);
+    //        NSLog(@"==================");
+            
+            
+            //Pause except what's playing
+            if (currentPlayingView != view && [view isPlaying]) {
+                [view pause];
+            }
+            
+            //Look for what will play
+            if (scrollView.contentOffset.y >= frame.origin.y && scrollView.contentOffset.y <= frame.size.height + frame.origin.y && view != currentPlayingView) {
+                
+                willPlayingView = view;
+                [currentPlayingView pause];
+            }
+        }];
+        
+        //Play the first one for the first time
+        if (!willPlayingView) {
+            willPlayingView = topPlayingView;
+        }
+        
+        if (willPlayingView && currentPlayingView != willPlayingView) {
+            objc_setAssociatedObject(scrollView.delegate, &kXlLPlayerViewCurrentPlaying, willPlayingView, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            [willPlayingView play];
+        }
+}
+
+void newScrollViewDidEndDragging(id self, SEL _cmd, void *parameter, void *parameter2) {
+    UIScrollView *scrollView = (__bridge UIScrollView *)parameter;
+    if (![scrollView respondsToSelector:@selector(delegate)]) {
+        return;
+    }
+    
+    struct objc_super superClass = {
+        .receiver = self,
+        .super_class = class_getSuperclass(object_getClass(scrollView.delegate))
+    };
+    
+    ((void (*) (id, SEL, void *))(void *)objc_msgSendSuper)((__bridge id)(&superClass), _cmd, parameter);
+    
+    
+}
+
+void newScrollViewDidScroll(id self, SEL _cmd, void *parameter) {
+    
+    UIScrollView *scrollView = (__bridge UIScrollView *)parameter;
+    if (![scrollView respondsToSelector:@selector(delegate)]) {
+        return;
+    }
+    
+    struct objc_super superClass = {
+        .receiver = self,
+        .super_class = class_getSuperclass(object_getClass(scrollView.delegate))
+    };
+    
+    ((void (*) (id, SEL, void *))(void *)objc_msgSendSuper)((__bridge id)(&superClass), _cmd, parameter);
+    
+    calculatePlayingView(parameter);
+}
+
+void calculatePlayingView(void *parameter) {
+    UIScrollView *scrollView = (__bridge UIScrollView *)parameter;
+    if (![scrollView respondsToSelector:@selector(delegate)]) {
+        return;
+    }
+    
+    
+}
+
+
 
 @end
