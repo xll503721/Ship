@@ -480,53 +480,12 @@ void newScrollViewDidEndDecelerating(id self, SEL _cmd, void *parameter) {
     
     ((void (*) (id, SEL, void *))(void *)objc_msgSendSuper)((__bridge id)(&superClass), _cmd, parameter);
     
-    
-    NSMapTable<NSString *, xlLPlayerView *> *playViews = objc_getAssociatedObject(scrollView.delegate, &kXlLPlayerViewSelf);
-        xlLPlayerView *currentPlayingView = objc_getAssociatedObject(scrollView.delegate, &kXlLPlayerViewCurrentPlaying);
-        
-        __block xlLPlayerView *willPlayingView = currentPlayingView;
-        __block xlLPlayerView *topPlayingView = nil;
-        __block CGFloat top = 0;
-        NSArray<xlLPlayerView *> *allPlayViews = [[playViews objectEnumerator] allObjects];
-        [allPlayViews enumerateObjectsUsingBlock:^(xlLPlayerView * _Nonnull view, NSUInteger idx, BOOL * _Nonnull stop) {
-
-            CGRect frame = view.frame;
-            if ([scrollView isKindOfClass:[UITableView class]]) {
-                frame = [view convertRect:view.frame toView:scrollView];
-            }
-            
-    //        NSLog(@"view.frame: %@, add: %p", [NSValue valueWithCGRect:frame], view);
-    //        NSLog(@"scrollview: %@", [NSValue valueWithCGPoint:scrollView.contentOffset]);
-    //        NSLog(@"idx:%ld", idx);
-    //        NSLog(@"==================");
-            
-            
-            //Pause except what's playing
-            if (currentPlayingView != view && [view isPlaying]) {
-                [view pause];
-            }
-            
-            //Look for what will play
-            if (scrollView.contentOffset.y >= frame.origin.y && scrollView.contentOffset.y <= frame.size.height + frame.origin.y && view != currentPlayingView) {
-                
-                willPlayingView = view;
-                [currentPlayingView pause];
-            }
-        }];
-        
-        //Play the first one for the first time
-        if (!willPlayingView) {
-            willPlayingView = topPlayingView;
-        }
-        
-        if (willPlayingView && currentPlayingView != willPlayingView) {
-            objc_setAssociatedObject(scrollView.delegate, &kXlLPlayerViewCurrentPlaying, willPlayingView, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-            [willPlayingView play];
-        }
+    calculatePlayingView(parameter);
 }
 
-void newScrollViewDidEndDragging(id self, SEL _cmd, void *parameter, void *parameter2) {
-    UIScrollView *scrollView = (__bridge UIScrollView *)parameter;
+void newScrollViewDidEndDragging(id self, SEL _cmd, void *parameter1, void *parameter2) {
+    UIScrollView *scrollView = (__bridge UIScrollView *)parameter1;
+    BOOL decelerate = parameter2;
     if (![scrollView respondsToSelector:@selector(delegate)]) {
         return;
     }
@@ -536,9 +495,11 @@ void newScrollViewDidEndDragging(id self, SEL _cmd, void *parameter, void *param
         .super_class = class_getSuperclass(object_getClass(scrollView.delegate))
     };
     
-    ((void (*) (id, SEL, void *))(void *)objc_msgSendSuper)((__bridge id)(&superClass), _cmd, parameter);
+    ((void (*) (id, SEL, void *, void *))(void *)objc_msgSendSuper)((__bridge id)(&superClass), _cmd, parameter1, parameter2);
     
-    
+    if (!decelerate) {
+        newScrollViewDidEndDecelerating(self, _cmd, parameter1);
+    }
 }
 
 void newScrollViewDidScroll(id self, SEL _cmd, void *parameter) {
@@ -554,8 +515,6 @@ void newScrollViewDidScroll(id self, SEL _cmd, void *parameter) {
     };
     
     ((void (*) (id, SEL, void *))(void *)objc_msgSendSuper)((__bridge id)(&superClass), _cmd, parameter);
-    
-    calculatePlayingView(parameter);
 }
 
 void calculatePlayingView(void *parameter) {
@@ -564,7 +523,62 @@ void calculatePlayingView(void *parameter) {
         return;
     }
     
+    NSMapTable<NSString *, xlLPlayerView *> *playViews = objc_getAssociatedObject(scrollView.delegate, &kXlLPlayerViewSelf);
+    xlLPlayerView *currentPlayingView = objc_getAssociatedObject(scrollView.delegate, &kXlLPlayerViewCurrentPlaying);
     
+    __block xlLPlayerView *willPlayingView = currentPlayingView;
+    __block xlLPlayerView *topPlayingView = nil;
+    __block CGFloat distance = scrollView.bounds.size.height;
+    CGFloat scrollViewHeightOffsetCenterY = scrollView.contentOffset.y + (scrollView.bounds.size.height / 2);
+    
+    NSArray<xlLPlayerView *> *allPlayViews = [[playViews objectEnumerator] allObjects];
+    [allPlayViews enumerateObjectsUsingBlock:^(xlLPlayerView * _Nonnull view, NSUInteger idx, BOOL * _Nonnull stop) {
+
+        CGRect frame = view.frame;
+        if ([scrollView isKindOfClass:[UITableView class]]) {
+            frame = [view convertRect:view.frame toView:scrollView];
+        }
+        
+        NSLog(@"view.frame: %@, add: %p", [NSValue valueWithCGRect:frame], view);
+        NSLog(@"scrollview: %@", [NSValue valueWithCGPoint:scrollView.contentOffset]);
+        NSLog(@"idx:%ld", idx);
+        NSLog(@"==================");
+        
+        
+        //Pause except what's playing
+        if (currentPlayingView != view && [view isPlaying]) {
+            [view pause];
+        }
+        
+        //calculate base line
+        CGFloat baseLine = 0;
+        if (frame.origin.y > scrollViewHeightOffsetCenterY) {
+            baseLine = frame.origin.y + frame.size.height;
+        }
+        else if (frame.origin.y < scrollViewHeightOffsetCenterY) {
+            baseLine = frame.origin.y;
+        }
+        
+        //Look for what will play
+        CGFloat newDistance = fabs(baseLine - scrollViewHeightOffsetCenterY);
+        if (newDistance < distance && view != currentPlayingView) {
+            distance = newDistance;
+            
+            willPlayingView = view;
+        }
+        
+    }];
+    
+    //Play the first one for the first time
+    if (!willPlayingView) {
+        willPlayingView = topPlayingView;
+    }
+    
+    if (willPlayingView && currentPlayingView != willPlayingView) {
+        objc_setAssociatedObject(scrollView.delegate, &kXlLPlayerViewCurrentPlaying, willPlayingView, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [currentPlayingView pause];
+        [willPlayingView play];
+    }
 }
 
 
