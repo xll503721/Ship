@@ -6,16 +6,16 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLClipCommand.h"
+#import "BRClipCommand.h"
 
-@interface xlLClipCommand ()
+@interface BRClipCommand ()
 
 @property (nonatomic, assign) NSTimeInterval fromSecond;
 @property (nonatomic, assign) NSTimeInterval toSecond;
 
 @end
 
-@implementation xlLClipCommand
+@implementation BRClipCommand
 
 - (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond
 {
@@ -26,7 +26,7 @@
     return self;
 }
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
     self = [super initWithCommand:command];
     if (self) {
         

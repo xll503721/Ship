@@ -7,13 +7,13 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "xlLCommand.h"
+#import "BRCommand.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface xlLStitchCommand : xlLCommand
+@interface BRStitchCommand : BRCommand
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command videoURL:(NSURL *)URL;
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command videoURL:(NSURL *)URL;
 
 
 @end

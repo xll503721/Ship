@@ -7,21 +7,21 @@
 //
 
 #import "ViewController.h"
-#import "xlLShip.h"
-#import "xlLCommand.h"
-#import "xlLStitchCommand.h"
-#import "xlLImageCommand.h"
-#import "xlLClipCommand.h"
-#import "xlLPlayerView.h"
+#import "BRShip.h"
+#import "BRCommand.h"
+#import "BRStitchCommand.h"
+#import "BRImageCommand.h"
+#import "BRClipCommand.h"
+#import "BRPlayerView.h"
 
 #import "APLCompositionDebugView.h"
 
 #import "TableViewCell.h"
 
-@interface ViewController ()<UIScrollViewDelegate, UITableViewDelegate, UITableViewDataSource>
+@interface ViewController ()<UIScrollViewDelegate, UITableViewDelegate, UITableViewDataSource, BRPlayerViewDeleate>
 
-@property (nonatomic, strong) xlLPlayerView *playerView;
-@property (nonatomic, strong) xlLPlayerView *playerView2;
+@property (nonatomic, strong) BRPlayerView *playerView;
+@property (nonatomic, strong) BRPlayerView *playerView2;
 @property (nonatomic, strong) APLCompositionDebugView *compositionDebugView;
 
 @property (nonatomic, strong) AVPlayer *player;
@@ -40,7 +40,7 @@
     
     
 //    {
-//        xlLCommand *command = [[xlLCommand alloc] initWithVideoURL:[NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip1" ofType:@"m4v"]]];
+//        BRCommand *command = [[BRCommand alloc] initWithVideoURL:[NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip1" ofType:@"m4v"]]];
 //        xlLStitchCommand *stitchCommand = [[xlLStitchCommand alloc] initWithCommand:command videoURL:[NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip2" ofType:@"mov"]]];
 //        [stitchCommand processWithCompleteHandle:^(AVAsset * _Nonnull asset, AVMutableVideoComposition * _Nullable videoComposition, AVMutableAudioMix * _Nullable audioMix) {
 //
@@ -89,6 +89,14 @@
 //    [self.scrollView addSubview:self.playerView2];
 //    [self.playerView2 autoLoadWithScrollView:self.scrollView];
     
+    
+//    [[self.view subviews] makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    
+    self.playerView = [[BRPlayerView alloc] initWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"]];
+    self.playerView.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
+    self.playerView.enablePlayWhileDownload = YES;
+    self.playerView.backgroundColor = [UIColor yellowColor];
+    [self.view addSubview:self.playerView];
 }
 
 - (void)viewWillLayoutSubviews {
@@ -111,18 +119,26 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    tableView.rowHeight = 200;
-    return 20;
+    
+    return 30;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     TableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TableViewCell"];
     cell.playerView.URL = [NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip1" ofType:@"m4v"]];
-    [cell.playerView autoLoadWithScrollView:tableView];
+    cell.playerView.delegate = self;
+//    [cell.playerView scrollInRect:CGRectMake(0, 300, tableView.bounds.size.width, 300) scrollView:tableView];
+//    [cell.playerView scrollInCenterBaseLineWithScrollView:tableView];
     cell.playerView.loopPlayCount = 10;
     
-    
     return cell;
+}
+
+#pragma mark - xlLPlayerView
+
+- (void)scrollInType:(BRScrollType)type currentIn:(BRPlayerView *)currentInPlayerView willIn:(BRPlayerView *)willInPlayerView {
+    [currentInPlayerView pause];
+    [willInPlayerView play];
 }
 
 

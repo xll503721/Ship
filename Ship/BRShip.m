@@ -6,16 +6,16 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLShip.h"
-#import "XLLShipMacro.h"
+#import "BRShip.h"
+#import "BRShipMacro.h"
 
-@interface xlLShip () <NSCopying,NSMutableCopying>
+@interface BRShip () <NSCopying,NSMutableCopying>
 
-@property (nonatomic, strong) NSMutableArray<id<XLLCommandProtocol>> *commands;
+@property (nonatomic, strong) NSMutableArray<id<BRCommandProtocol>> *commands;
 
 @end
 
-@implementation xlLShip
+@implementation BRShip
 
 - (instancetype)init
 {
@@ -34,7 +34,7 @@
     if (self) {
         _commands = @[].mutableCopy;
         
-        xlLCommand *command = [[xlLCommand alloc] initWithVideoURL:URL];
+        BRCommand *command = [[BRCommand alloc] initWithVideoURL:URL];
         [_commands addObject:command];
     }
     return self;
@@ -68,18 +68,18 @@
 
 #pragma mark - edit
 
-- (xlLShip *)stitchWithFrontVideoURL:(NSURL *)fURL videoURL:(NSURL *)URL {
+- (BRShip *)stitchWithFrontVideoURL:(NSURL *)fURL videoURL:(NSURL *)URL {
 //    xlLStitchCommand *command = [[xlLStitchCommand alloc] initWithFrontVideoURL:fURL videoURL:URL];
 //    [self.commands addObject:command];
     return self;
 }
 
-- (xlLShip *)compositeVideoWithImages:(NSArray<UIImage * > *)images {
+- (BRShip *)compositeVideoWithImages:(NSArray<UIImage * > *)images {
     
     return self;
 }
 
-- (xlLShip *)clipViedoWithURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
+- (BRShip *)clipViedoWithURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond {
 //    xlLClipCommand *command = [[xlLClipCommand alloc] initWithVideoURL:URL fromSecond:fromSecond toSecond:toSecond];
 //    [self.commands addObject:command];
     return self;
@@ -88,7 +88,7 @@
 #pragma mark - action
 
 - (void)executeExport {
-//    [self.commands enumerateObjectsUsingBlock:^(id<XLLCommandProtocol>  _Nonnull command, NSUInteger idx, BOOL * _Nonnull stop) {
+//    [self.commands enumerateObjectsUsingBlock:^(id<BRCommandProtocol>  _Nonnull command, NSUInteger idx, BOOL * _Nonnull stop) {
 //        [command execute:command.mutableComposition videoComposition:command.videoComposition audioMix:command.audioMix];
 //    }];
     

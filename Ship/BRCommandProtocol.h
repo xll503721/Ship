@@ -1,5 +1,5 @@
 //
-//  XLLCommandProtocol.h
+//  BRCommandProtocol.h
 //  Ship
 //
 //  Created by xlL on 2019/10/28.
@@ -14,10 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 typedef void(^ProcessComplete)(AVAsset *asset, AVMutableVideoComposition * _Nullable videoComposition, AVMutableAudioMix * _Nullable audioMix);
 
-@protocol XLLCommandProtocol <NSObject>
+@protocol BRCommandProtocol <NSObject>
 
 @property (nonatomic, readonly) id<XLLReceiverProtocol> receiver;
-@property (nonatomic, readonly) id<XLLCommandProtocol> command;
+@property (nonatomic, readonly) id<BRCommandProtocol> command;
 
 @property (nonatomic, readonly) AVMutableComposition *mutableComposition;
 @property (nonatomic, readonly) AVMutableVideoComposition *videoComposition;
@@ -25,7 +25,7 @@ typedef void(^ProcessComplete)(AVAsset *asset, AVMutableVideoComposition * _Null
 
 - (void)execute:(AVMutableComposition *)asset videoComposition:(AVMutableVideoComposition * _Nullable)videoComposition audioMix:(AVMutableAudioMix * _Nullable)audioMix;
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command;
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command;
 - (void)processWithCompleteHandle:(ProcessComplete)handler;
 
 @end

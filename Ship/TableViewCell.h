@@ -8,12 +8,12 @@
 
 #import <UIKit/UIKit.h>
 
-@class xlLPlayerView;
+@class BRPlayerView;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface TableViewCell : UITableViewCell
-@property (weak, nonatomic) IBOutlet xlLPlayerView *playerView;
+@property (weak, nonatomic) IBOutlet BRPlayerView *playerView;
 
 @end
 

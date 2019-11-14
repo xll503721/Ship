@@ -23,15 +23,47 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "53361C5E-1945-433F-B337-37326DB5A98E"
+            uuid = "26F9F294-0A75-4FE9-BA6E-DB92E804D2C0"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Ship/xlLPlayerView.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "565"
-            endingLineNumber = "565"
+            startingLineNumber = "279"
+            endingLineNumber = "279"
+            landmarkName = "-onPlayerItemDidPlayToEndTime:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D8E43585-C864-4DD1-BC1C-5058140759B9"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Ship/xlLPlayerView.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "283"
+            endingLineNumber = "283"
+            landmarkName = "-onAppResignActive:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "971C41F7-6580-460B-B961-62C4FCE82892"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Ship/xlLPlayerView.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "578"
+            endingLineNumber = "578"
             landmarkName = "calculatePlayingView(parameter)"
             landmarkType = "9">
          </BreakpointContent>
@@ -39,17 +71,65 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "7AC49B3D-3A13-439D-8F6E-23E03766E6FE"
+            uuid = "C0BD6146-F608-4EB9-BDFC-BBCB077AA8D4"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "Ship/xlLPlayerView.m"
+            filePath = "Ship/BRPlayerView.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "573"
-            endingLineNumber = "573"
-            landmarkName = "calculatePlayingView(parameter)"
-            landmarkType = "9">
+            startingLineNumber = "266"
+            endingLineNumber = "266"
+            landmarkName = "-download:didCompleteWithError:"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "C0BD6146-F608-4EB9-BDFC-BBCB077AA8D4 - 66db4a60b3ee6483"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "-[BRPlayerViewCache download:didCompleteWithError:]"
+                  moduleName = "Ship"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/xll/Desktop/Ship/Ship/BRPlayerView.m"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "266"
+                  endingLineNumber = "266"
+                  offsetFromSymbolStart = "93">
+               </Location>
+               <Location
+                  uuid = "C0BD6146-F608-4EB9-BDFC-BBCB077AA8D4 - 58de88bcb0668be9"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "__51-[BRPlayerViewCache download:didCompleteWithError:]_block_invoke"
+                  moduleName = "Ship"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/xll/Desktop/Ship/Ship/BRPlayerView.m"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "267"
+                  endingLineNumber = "267"
+                  offsetFromSymbolStart = "68">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B5C5EA07-8CEA-4321-942F-56DE0E3C8D10"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Ship/BRPlayerView.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "233"
+            endingLineNumber = "233"
+            landmarkName = "-resourceLoader:shouldWaitForLoadingOfRequestedResource:"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

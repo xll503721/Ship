@@ -9,16 +9,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface xlLShip : NSObject
+@interface BRShip : NSObject
 
 //+ (instancetype)defaultShip;
 
 - (instancetype)initWithVideoURL:(NSURL *)URL;
 - (instancetype)initWithImages:(NSArray<UIImage *> *)images;
 
-- (xlLShip *)stitchFrontVideoWithURL:(NSURL *)fURL videoURL:(NSURL *)URL;
-- (xlLShip *)compositeVideoWithImages:(NSArray<UIImage * > *)images;
-- (xlLShip *)clipViedoWithURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond;
+- (BRShip *)stitchFrontVideoWithURL:(NSURL *)fURL videoURL:(NSURL *)URL;
+- (BRShip *)compositeVideoWithImages:(NSArray<UIImage * > *)images;
+- (BRShip *)clipViedoWithURL:(NSURL *)URL fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond;
 
 - (void)executeExport;
 

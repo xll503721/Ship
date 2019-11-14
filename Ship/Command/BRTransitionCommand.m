@@ -6,15 +6,15 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLTransitionCommand.h"
+#import "BRTransitionCommand.h"
 
-@interface xlLTransitionCommand ()
+@interface BRTransitionCommand ()
 
 @end
 
-@implementation xlLTransitionCommand
+@implementation BRTransitionCommand
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command {
     self = [super initWithCommand:command];
     if (self) {
         

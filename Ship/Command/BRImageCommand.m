@@ -6,18 +6,18 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLImageCommand.h"
-#import "xlLStitchCommand.h"
+#import "BRImageCommand.h"
+#import "BRStitchCommand.h"
 
 static NSString *kxlLImageCommandVideoName = @"imageCommandVideo";
 
-@interface xlLImageCommand ()
+@interface BRImageCommand ()
 
 @property (nonatomic, strong) NSArray<UIImage *> *images;
 
 @end
 
-@implementation xlLImageCommand
+@implementation BRImageCommand
 
 - (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver images:(NSArray<UIImage *> *)images
 {
@@ -28,7 +28,7 @@ static NSString *kxlLImageCommandVideoName = @"imageCommandVideo";
     return self;
 }
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command images:(NSArray<UIImage *> *)images {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command images:(NSArray<UIImage *> *)images {
     self = [super initWithCommand:command];
     if (self) {
         self.images = images;
@@ -85,7 +85,7 @@ static NSString *kxlLImageCommandVideoName = @"imageCommandVideo";
             if (videoFrameCount > imageCount) {
                 [assetWriterInput markAsFinished];
                 [assetWriter finishWritingWithCompletionHandler:^{
-                    xlLStitchCommand *stitchCommand = [[xlLStitchCommand alloc] initWithVideoURL:cacheURL];
+                    BRStitchCommand *stitchCommand = [[BRStitchCommand alloc] initWithVideoURL:cacheURL];
 //                    [stitchCommand execute:self.mutableComposition];
                 }];
                 break;

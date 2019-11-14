@@ -1,20 +1,20 @@
 //
-//  xlLCommand.m
+//  BRCommand.m
 //  Ship
 //
 //  Created by xlL on 2019/10/28.
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLCommand.h"
+#import "BRCommand.h"
 
-@interface xlLCommand ()
+@interface BRCommand ()
 
 @property (nonatomic, strong) id<XLLReceiverProtocol> receiver;
 @property (nonatomic, strong) AVAssetWriter *assetWriter;
 @property (nonatomic, strong) AVAsset *asset;
 
-@property (nonatomic, strong) id<XLLCommandProtocol> command;
+@property (nonatomic, strong) id<BRCommandProtocol> command;
 @property (nonatomic, copy) ProcessComplete handler;
 
 @property (nonatomic, strong) AVMutableComposition *mutableComposition;
@@ -23,7 +23,7 @@
 
 @end
 
-@implementation xlLCommand
+@implementation BRCommand
 
 - (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver
 {
@@ -44,7 +44,7 @@
     return self;
 }
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command {
     self = [super init];
     if (self) {
         self.command = command;
@@ -53,7 +53,7 @@
     return self;
 }
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command videoURL:(NSURL *)URL {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command videoURL:(NSURL *)URL {
     self = [super init];
     if (self) {
         self.command = command;

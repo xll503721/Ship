@@ -6,11 +6,11 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLCommand.h"
+#import "BRCommand.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface xlLExportCommand : xlLCommand
+@interface BRExportCommand : BRCommand
 
 @end
 

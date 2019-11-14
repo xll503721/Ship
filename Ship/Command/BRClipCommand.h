@@ -7,13 +7,13 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "xlLCommand.h"
+#import "BRCommand.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface xlLClipCommand : xlLCommand
+@interface BRClipCommand : BRCommand
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond;
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command fromSecond:(NSTimeInterval)fromSecond toSecond:(NSTimeInterval)toSecond;
 
 @end
 

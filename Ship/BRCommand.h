@@ -1,5 +1,5 @@
 //
-//  xlLCommand.h
+//  BRCommand.h
 //  Ship
 //
 //  Created by xlL on 2019/10/28.
@@ -7,12 +7,12 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "XLLCommandProtocol.h"
+#import "BRCommandProtocol.h"
 #import "XLLReceiverProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface xlLCommand : NSObject <XLLCommandProtocol>
+@interface BRCommand : NSObject <BRCommandProtocol>
 
 - (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver;
 - (instancetype)initWithVideoURL:(NSURL *)URL;

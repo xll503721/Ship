@@ -6,16 +6,16 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLStitchCommand.h"
+#import "BRStitchCommand.h"
 
-@interface xlLStitchCommand ()
+@interface BRStitchCommand ()
 
 @property (nonatomic, strong) id<XLLReceiverProtocol> receiver;
 @property (nonatomic, strong) AVAsset *asset;
 
 @end
 
-@implementation xlLStitchCommand
+@implementation BRStitchCommand
 
 - (instancetype)initWithReceiver:(id<XLLReceiverProtocol>)receiver frontVideoURL:(NSURL *)fURL videoURL:(NSURL *)URL
 {
@@ -34,7 +34,7 @@
     return self;
 }
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command videoURL:(NSURL *)URL {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command videoURL:(NSURL *)URL {
     self = [super initWithCommand:command];
     if (self) {
         self.asset = [AVAsset assetWithURL:URL];

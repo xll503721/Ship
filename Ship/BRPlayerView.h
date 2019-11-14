@@ -14,9 +14,15 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class xlLPlayerView;
+typedef NS_ENUM(NSUInteger, BRScrollType) {
+    BRScrollTypeBaseLine,
+    BRScrollTypeRect,
+};
 
-@protocol xlLPlayerViewDeleate <NSObject>
+@class BRPlayerView;
+@class BRPlayerViewCache;
+
+@protocol BRPlayerViewDeleate <NSObject>
 
 @optional
 //loading
@@ -24,34 +30,42 @@ NS_ASSUME_NONNULL_BEGIN
 /// when AVPlayer status become AVPlayerItemStatusReadyToPlay
 /// @param playerView view
 /// @param duration video total duration
-- (void)playerView:(xlLPlayerView *)playerView readyToPlayWithDuration:(Float64)duration;
+- (void)playerView:(BRPlayerView *)playerView readyToPlayWithDuration:(Float64)duration;
 
 /// when AVPlayer status become AVPlayerItemStatusFailed or AVPlayerItemStatusUnknown
 /// @param playerView view
 /// @param error error description
-- (void)playerView:(xlLPlayerView *)playerView failToPlayWithError:(NSError *)error;
+- (void)playerView:(BRPlayerView *)playerView failToPlayWithError:(NSError *)error;
 
 //playing
 
-- (void)playerView:(xlLPlayerView *)playerView playingWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
-- (void)playerView:(xlLPlayerView *)playerView playEndWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
-- (void)playerView:(xlLPlayerView *)playerView playingOrPauseStatusChange:(BOOL)isPlaying;
-- (void)playerView:(xlLPlayerView *)playerView playingWithLoadedBuffer:(BOOL)isPlaying;
+- (void)playerView:(BRPlayerView *)playerView playingWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
+- (void)playerView:(BRPlayerView *)playerView playEndWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
+- (void)playerView:(BRPlayerView *)playerView playingOrPauseStatusChange:(BOOL)isPlaying;
+- (void)playerView:(BRPlayerView *)playerView playingWithLoadedBuffer:(BOOL)isPlaying;
+
+//scroll
+- (void)scrollInType:(BRScrollType)type currentInRect:(BRPlayerView *)currentInPlayerView willInRect:(BRPlayerView *)willInPlayerView;
+
 
 @end
 
-@interface xlLPlayerView : UIView
+@interface BRPlayerView : UIView
 
-@property (nonatomic, weak) id<xlLPlayerViewDeleate> delegate;
+@property (nonatomic, weak) id<BRPlayerViewDeleate> delegate;
 
-/// set loop play
+/// set loop play, default value -1
 @property (nonatomic, assign) NSInteger loopPlayCount;
 
 /// set Overlap auto to hide
 @property (nonatomic, assign) BOOL isOverlapViewAutoHide;
 
-/// when AVPlayer status become AVPlayerItemStatusReadyToPlay, will call [player play]
+/// when AVPlayer status become AVPlayerItemStatusReadyToPlay, will call [player play], default value YES
 @property (nonatomic, assign) BOOL autoPlayWhenReadyToPlay;
+
+/// enable playing while downloading
+@property (nonatomic, assign) BOOL enablePlayWhileDownload;
+
 @property (nonatomic, readonly) BOOL isPlaying;
 
 @property (nonatomic, strong) NSURL *URL;
@@ -70,9 +84,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface xlLPlayerView (XLAutoLoad)
+@interface BRPlayerView (BRScroll)
 
-- (void)autoLoadWithScrollView:(UIScrollView *)scrollView;
+- (void)scrollWithView:(UIScrollView *)scrollView hitRect:(CGRect)testRect withType:(BRScrollType)type;
 
 @end
 

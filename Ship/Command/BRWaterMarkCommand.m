@@ -6,9 +6,9 @@
 //  Copyright © 2019 xlL. All rights reserved.
 //
 
-#import "xlLWaterMarkCommand.h"
+#import "BRWaterMarkCommand.h"
 
-@interface xlLWaterMarkCommand ()
+@interface BRWaterMarkCommand ()
 
 @property (nonatomic, strong) UIImage *image;
 @property (nonatomic, strong) NSString *string;
@@ -16,9 +16,9 @@
 
 @end
 
-@implementation xlLWaterMarkCommand
+@implementation BRWaterMarkCommand
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command image:(UIImage *)image {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command image:(UIImage *)image {
     self = [super initWithCommand:command];
     if (self) {
         self.image = image;
@@ -26,7 +26,7 @@
     return self;
 }
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command string:(NSString *)string {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command string:(NSString *)string {
     self = [super initWithCommand:command];
     if (self) {
         self.string = string;
@@ -34,7 +34,7 @@
     return self;
 }
 
-- (instancetype)initWithCommand:(id<XLLCommandProtocol>)command waterMarkLayer:(CALayer *)layer {
+- (instancetype)initWithCommand:(id<BRCommandProtocol>)command waterMarkLayer:(CALayer *)layer {
     self = [super initWithCommand:command];
     if (self) {
         self.layer = layer;
