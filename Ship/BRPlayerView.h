@@ -14,51 +14,27 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef NS_ENUM(NSUInteger, BRScrollType) {
-    BRScrollTypeBaseLine,
-    BRScrollTypeRect,
-};
-
+@class BRPlayer;
 @class BRPlayerView;
 @class BRPlayerViewCache;
 
-@protocol BRPlayerViewDeleate <NSObject>
+#pragma mark - BRPlayerProtocol
 
-@optional
-//loading
+typedef NS_ENUM(NSUInteger, BRPlayerStatus)  {
+    BRPlayerStatusUnknown = 0,
+    BRPlayerStatusReadyToPlay,
+    BRPlayerStatusFailed,
+    BRPlayerStatusBuffering,
+    BRPlayerStatusPlaying,
+    BRPlayerStatusPause,
+    BRPlayerStatusStop,
+    BRPlayerStatusDownloading,
+};
 
-/// when AVPlayer status become AVPlayerItemStatusReadyToPlay
-/// @param playerView view
-/// @param duration video total duration
-- (void)playerView:(BRPlayerView *)playerView readyToPlayWithDuration:(Float64)duration;
-
-/// when AVPlayer status become AVPlayerItemStatusFailed or AVPlayerItemStatusUnknown
-/// @param playerView view
-/// @param error error description
-- (void)playerView:(BRPlayerView *)playerView failToPlayWithError:(NSError *)error;
-
-//playing
-
-- (void)playerView:(BRPlayerView *)playerView playingWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
-- (void)playerView:(BRPlayerView *)playerView playEndWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
-- (void)playerView:(BRPlayerView *)playerView playingOrPauseStatusChange:(BOOL)isPlaying;
-- (void)playerView:(BRPlayerView *)playerView playingWithLoadedBuffer:(BOOL)isPlaying;
-
-//scroll
-- (void)scrollInType:(BRScrollType)type currentInRect:(BRPlayerView *)currentInPlayerView willInRect:(BRPlayerView *)willInPlayerView;
-
-
-@end
-
-@interface BRPlayerView : UIView
-
-@property (nonatomic, weak) id<BRPlayerViewDeleate> delegate;
+@protocol BRPlayerProtocol <NSObject>
 
 /// set loop play, default value -1
 @property (nonatomic, assign) NSInteger loopPlayCount;
-
-/// set Overlap auto to hide
-@property (nonatomic, assign) BOOL isOverlapViewAutoHide;
 
 /// when AVPlayer status become AVPlayerItemStatusReadyToPlay, will call [player play], default value YES
 @property (nonatomic, assign) BOOL autoPlayWhenReadyToPlay;
@@ -67,18 +43,84 @@ typedef NS_ENUM(NSUInteger, BRScrollType) {
 @property (nonatomic, assign) BOOL enablePlayWhileDownload;
 
 @property (nonatomic, readonly) BOOL isPlaying;
+@property (nonatomic, readonly) BRPlayerStatus status;
 
-@property (nonatomic, strong) NSURL *URL;
-@property (nonatomic, strong) AVAsset *asset;
+/// playing URL
+@property (nonatomic, readonly) NSURL *URL;
 
+/// playing asset
+@property (nonatomic, readonly) AVAsset *asset;
 
 - (instancetype)initWithURL:(NSURL *)URL;
 - (instancetype)initWithAsset:(AVAsset *)asset;
 - (instancetype)initWithAsset:(AVAsset *)asset videoComposition:(AVVideoComposition *)videoComposition audioMix:(AVAudioMix *)audioMix;
 
+- (void)reloadWithURL:(NSURL *)URL;
+- (void)reloadWithAsset:(AVAsset *)asset;
+- (void)reloadWithAsset:(AVAsset *)asset videoComposition:(AVVideoComposition *)videoComposition audioMix:(AVAudioMix *)audioMix;
+
 - (void)play;
 - (void)pause;
 - (void)seekToTime:(CMTime)time completionHandler:(void (^)(BOOL finished))completionHandler;
+
+@end
+
+#pragma mark - BRPlayerDelegate
+
+@protocol BRPlayerDelegate <NSObject>
+
+@optional
+
+- (void)player:(BRPlayer *)player statusDidChange:(BRPlayerStatus)status;
+
+/// when AVPlayer status become AVPlayerItemStatusReadyToPlay
+- (void)player:(BRPlayer *)player readyToPlayWithDuration:(Float64)duration;
+
+/// when AVPlayer status become AVPlayerItemStatusFailed or AVPlayerItemStatusUnknown
+- (void)player:(BRPlayer *)player failToPlayWithError:(NSError *)error;
+
+//playing
+
+- (void)player:(BRPlayer *)player playingWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
+- (void)player:(BRPlayer *)player playEndWithProgress:(CGFloat)progress currentTime:(CGFloat)time;
+- (void)player:(BRPlayer *)player playingOrPauseStatusChange:(BOOL)isPlaying;
+- (void)player:(BRPlayer *)player playingWithLoadedBuffer:(BOOL)isPlaying;
+
+@end
+
+#pragma mark - BRPlayer
+
+@interface BRPlayer : NSObject <BRPlayerProtocol>
+
+@property (nonatomic, weak) id<BRPlayerDelegate> delegate;
+@property (nonatomic, strong) CALayer *layer;
+
+@end
+
+
+#pragma mark - BRPlayerViewDeleate
+
+typedef NS_ENUM(NSUInteger, BRScrollType) {
+    BRScrollTypeBaseLine,
+    BRScrollTypeRect,
+};
+
+@protocol BRPlayerViewDeleate <NSObject>
+
+//scroll
+- (void)scrollInType:(BRScrollType)type currentInRect:(BRPlayerView *)currentInPlayerView willInRect:(BRPlayerView *)willInPlayerView;
+
+
+@end
+
+#pragma mark - BRPlayerView
+
+@interface BRPlayerView : UIView <BRPlayerProtocol>
+
+@property (nonatomic, weak) id<BRPlayerViewDeleate> delegate;
+
+/// set Overlap auto to hide
+@property (nonatomic, assign) BOOL isOverlapViewAutoHide;
 
 - (void)setOverlapView:(UIView *)view;
 

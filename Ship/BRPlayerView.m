@@ -28,6 +28,336 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
     return r;
 }
 
+#pragma mark - BRPlayer
+
+typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context);
+
+@interface BRPlayer ()
+
+@property (nonatomic, strong) AVPlayer *player;
+@property (nonatomic, strong) AVPlayerItem *playerItem;
+@property (nonatomic, strong) AVPlayerLayer *playerLayer;
+
+@property (nonatomic, strong) NSDictionary<NSString *, ObserveBlock> *observeBlocks;
+@property (nonatomic, assign) Float64 duration;
+
+@property (nonatomic, strong) BRPlayerViewCache *cache;
+
+@property (nonatomic, assign) BOOL isPlaying;
+
+/// playing URL
+@property (nonatomic, strong) NSURL *URL;
+
+/// playing asset
+@property (nonatomic, strong) AVAsset *asset;
+
+@end
+
+@implementation BRPlayer
+
+- (void)dealloc
+{
+    [self removeObserver];
+}
+
+- (instancetype)initWithURL:(NSURL *)URL
+{
+    self = [super init];
+    if (self) {
+        
+        self.URL = URL;
+        self.playerItem = [AVPlayerItem playerItemWithURL:URL];
+        
+        [self commonInit];
+    }
+    return self;
+}
+
+- (instancetype)initWithAsset:(AVAsset *)asset
+{
+    self = [super init];
+    if (self) {
+        
+        self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
+        
+        [self commonInit];
+    }
+    return self;
+}
+
+- (instancetype)initWithAsset:(AVAsset *)asset videoComposition:(AVVideoComposition *)videoComposition audioMix:(AVAudioMix *)audioMix
+{
+    self = [super init];
+    if (self) {
+        self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
+        self.playerItem.videoComposition = videoComposition;
+        self.playerItem.audioMix = audioMix;
+        
+        [self commonInit];
+    }
+    return self;
+}
+
+- (void)commonInit {
+    
+    __weak typeof(self) wself = self;
+    self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
+    [self.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 5) queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
+        CGFloat progress = CMTimeGetSeconds(wself.player.currentItem.currentTime) / CMTimeGetSeconds(wself.player.currentItem.duration);
+        if (wself.delegate && [wself.delegate respondsToSelector:@selector(player:playingWithProgress:currentTime:)]) {
+            CGFloat currentTime = wself.playerItem.currentTime.value / wself.playerItem.currentTime.timescale;
+            [wself.delegate player:wself playingWithProgress:progress currentTime:currentTime];
+        }
+        
+    }];
+    self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
+    self.layer = self.playerLayer;
+    
+    [self addObserver];
+}
+
+- (void)addObserver {
+    [self.observeBlocks enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, ObserveBlock  _Nonnull obj, BOOL * _Nonnull stop) {
+        [self.playerItem addObserver:self forKeyPath:key options:NSKeyValueObservingOptionNew context:nil];
+    }];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemPlaybackStalled:) name:AVPlayerItemPlaybackStalledNotification object:self.playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppResignActive:) name:UIApplicationWillResignActiveNotification object:self.playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:self.playerItem];
+}
+
+- (void)removeObserver {
+    [self.observeBlocks enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, ObserveBlock  _Nonnull obj, BOOL * _Nonnull stop) {
+        [self.playerItem removeObserver:self forKeyPath:key];
+    }];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+
+- (void)reload {
+    __weak typeof(self) wself = self;
+    [self.player replaceCurrentItemWithPlayerItem:self.playerItem];
+    [self.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 5) queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
+        CGFloat progress = CMTimeGetSeconds(wself.player.currentItem.currentTime) / CMTimeGetSeconds(wself.player.currentItem.duration);
+        if (wself.delegate && [wself.delegate respondsToSelector:@selector(player:playingWithProgress:currentTime:)]) {
+            CGFloat currentTime = wself.playerItem.currentTime.value / wself.playerItem.currentTime.timescale;
+            [wself.delegate player:wself playingWithProgress:progress currentTime:currentTime];
+        }
+    }];
+    [self removeObserver];
+    [self addObserver];
+}
+
+#pragma mark - Observer
+
+- (void)onPlayerItemDidPlayToEndTime:(NSNotification *)notification {
+    AVPlayerItem *playerItem = notification.object;
+    if (playerItem != self.playerItem) {
+        return;
+    }
+    
+    if (self.delegate && [self.delegate respondsToSelector:@selector(player:playingWithProgress:currentTime:)]) {
+        CGFloat currentTime = self.playerItem.currentTime.value / self.playerItem.currentTime.timescale;
+        CGFloat progress = CMTimeGetSeconds(self.player.currentItem.currentTime) / CMTimeGetSeconds(self.player.currentItem.duration);
+        [self.delegate player:self playingWithProgress:progress currentTime:currentTime];
+    }
+    
+    if (self.loopPlayCount > 0) {
+        self.loopPlayCount--;
+        [self pause];
+        [self seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
+            
+        }];
+        [self play];
+    }
+    else {
+        self.loopPlayCount = -1;
+    }
+}
+
+- (void)onAppResignActive:(NSNotification *)notification {
+    [self pause];
+}
+
+- (void)onAppBecomeActive:(NSNotification *)notification {
+    if (self.isPlaying) {
+        [self play];
+    }
+}
+
+- (void)onPlayerItemPlaybackStalled:(NSNotification *)notification {
+    
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
+    ObserveBlock observeBlock = self.observeBlocks[keyPath];
+    if (observeBlock) {
+        observeBlock(keyPath, object, change, context);
+    }
+}
+
+- (void)reset {
+    
+    //reset property
+    self.loopPlayCount = -1;
+    self.autoPlayWhenReadyToPlay = NO;
+    
+    //remove all observer
+    [self removeObserver];
+    
+    //remove layer
+    [self.playerLayer removeFromSuperlayer];
+    self.playerLayer = nil;
+    
+    //clear AVPlayer
+    [self.player pause];
+    [self.player cancelPendingPrerolls];
+    self.player = nil;
+}
+
+#pragma mark - public method
+
+- (void)play {
+    [self.player play];
+}
+
+- (void)pause {
+    [self.player pause];
+}
+
+- (void)seekToTime:(CMTime)time completionHandler:(void (^)(BOOL finished))completionHandler {
+    [self.player seekToTime:time completionHandler:completionHandler];
+}
+
+- (void)reloadWithURL:(NSURL *)URL {
+    [self reset];
+    
+    
+}
+
+#pragma mark - setter
+
+- (void)setEnablePlayWhileDownload:(BOOL)enablePlayWhileDownload {
+    self.enablePlayWhileDownload = enablePlayWhileDownload;
+//    if (enablePlayWhileDownload) {
+//
+//        [self reset];
+//
+////        self.cache = BRPlayerViewCache.new;
+////        self.cache.delegate = self;
+//
+//        NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:self.URL resolvingAgainstBaseURL:NO];
+//        actualURLComponents.scheme = @"streaming";
+//
+//        AVURLAsset *urlAsset = [AVURLAsset assetWithURL:[actualURLComponents URL]];
+//        [urlAsset.resourceLoader setDelegate:self.cache queue:dispatch_get_main_queue()];
+//        self.playerItem = [AVPlayerItem playerItemWithAsset:urlAsset];
+//
+//        [self commonInit];
+//    }
+}
+
+- (void)setURL:(NSURL *)URL {
+    if (![URL.path isEqualToString:_URL.path]) {
+        _URL = URL;
+        self.playerItem = [AVPlayerItem playerItemWithURL:_URL];
+        [self commonInit];
+    }
+}
+
+- (void)setAsset:(AVAsset *)asset {
+    if (_asset !=  asset) {
+        _asset = asset;
+        self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
+        [self reload];
+    }
+}
+
+- (void)setDuration:(Float64)duration {
+    _duration = duration;
+}
+
+#pragma mark - getter
+
+- (NSDictionary<NSString *, ObserveBlock> *)observeBlocks {
+    if (!_observeBlocks) {
+        _observeBlocks = @{
+            @"status": [self statusBlock],
+            @"loadedTimeRanges": [self loadedTimeRangesBlock],
+            @"playbackBufferEmpty": [self playbackBufferEmptyBlock],
+            @"playbackLikelyToKeepUp": [self playbackLikelyToKeepUpBlock],
+        };
+    }
+    return _observeBlocks;
+}
+
+- (ObserveBlock)statusBlock {
+    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
+        AVPlayerItemStatus status = [change[NSKeyValueChangeNewKey] intValue];
+        
+        if (self.delegate && [self.delegate respondsToSelector:@selector(player:statusDidChange:)] && self.status != (BRPlayerStatus)status) {
+            [self.delegate player:self statusDidChange:status];
+        }
+        
+        if (status == AVPlayerItemStatusReadyToPlay) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(player:readyToPlayWithDuration:)]) {
+                [self.delegate player:self readyToPlayWithDuration:CMTimeGetSeconds(self.playerItem.duration)];
+            }
+            
+            self.duration = (NSInteger)round(CMTimeGetSeconds(self.playerItem.duration));
+            if (self.autoPlayWhenReadyToPlay) {
+                [self.player play];
+            }
+        }
+        else if (status == AVPlayerItemStatusFailed || status == AVPlayerItemStatusUnknown) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(player:failToPlayWithError:)]) {
+                NSError *error = [NSError errorWithDomain:@"" code:1000 userInfo:nil];
+                [self.delegate player:self failToPlayWithError:error];
+            }
+        }
+    };
+}
+
+- (ObserveBlock)loadedTimeRangesBlock {
+    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
+        CMTimeRange timeRange = [self.playerItem.loadedTimeRanges.firstObject CMTimeRangeValue];//本次缓冲时间范围
+        Float64 startSeconds = CMTimeGetSeconds(timeRange.start);
+        Float64 durationSeconds = CMTimeGetSeconds(timeRange.duration);
+        NSTimeInterval totalBuffer = startSeconds + durationSeconds;//缓冲总长度
+        
+        NSLog(@"当前缓冲时间:%f",totalBuffer);
+        
+        [self.player play];
+    };
+}
+
+- (ObserveBlock)playbackBufferEmptyBlock {
+    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
+        BOOL empty = [change[NSKeyValueChangeNewKey] intValue];
+        if (!empty) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(player:playingOrPauseStatusChange:)]) {
+                [self.delegate player:self playingOrPauseStatusChange:empty];
+            }
+        }
+    };
+}
+
+- (ObserveBlock)playbackLikelyToKeepUpBlock {
+    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
+        if (self.delegate && [self.delegate respondsToSelector:@selector(player:playingOrPauseStatusChange:)]) {
+            [self.delegate player:self playingOrPauseStatusChange:YES];
+        }
+        
+        NSLog(@"isPlaybackLikelyToKeepUp is: %ld", (long)self.playerItem.isPlaybackLikelyToKeepUp);
+        
+        [self.player play];
+    };
+}
+
+@end
+
 
 
 #pragma mark - BRPlayerViewDownload
@@ -392,351 +722,16 @@ didCompleteWithError:(nullable NSError *)error {
 
 @end
 
-typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context);
-
 @interface BRPlayerView ()
 
-@property (nonatomic, strong) AVPlayer *player;
-@property (nonatomic, strong) AVPlayerItem *playerItem;
-@property (nonatomic, strong) AVPlayerLayer *playerLayer;
 
-@property (nonatomic, strong) NSDictionary<NSString *, ObserveBlock> *observeBlocks;
-@property (nonatomic, assign) Float64 duration;
-
-@property (nonatomic, strong) BRPlayerContentView *contentView;
-
-@property (nonatomic, strong) BRPlayerViewCache *cache;
 
 @end
 
 @implementation BRPlayerView
 
 
-
-- (void)dealloc
-{
-    [self remoeObserver];
-}
-
-- (instancetype)initWithURL:(NSURL *)URL
-{
-    self = [super initWithFrame:CGRectZero];
-    if (self) {
-        
-        self.URL = URL;
-        self.playerItem = [AVPlayerItem playerItemWithURL:URL];
-        
-        [self commonInit];
-        [self viewsCommonInit];
-    }
-    return self;
-}
-
-- (instancetype)initWithAsset:(AVAsset *)asset
-{
-    self = [super initWithFrame:CGRectZero];
-    if (self) {
-        
-        self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
-        
-        [self commonInit];
-        [self viewsCommonInit];
-    }
-    return self;
-}
-
-- (instancetype)initWithAsset:(AVAsset *)asset videoComposition:(AVVideoComposition *)videoComposition audioMix:(AVAudioMix *)audioMix
-{
-    self = [super initWithFrame:CGRectZero];
-    if (self) {
-        self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
-        self.playerItem.videoComposition = videoComposition;
-        self.playerItem.audioMix = audioMix;
-        
-        [self commonInit];
-        [self viewsCommonInit];
-        
-    }
-    return self;
-}
-
-- (void)layoutSubviews {
-    [super layoutSubviews];
-    
-    self.playerLayer.frame = self.bounds;
-    self.contentView.frame = self.bounds;
-}
-
-- (void)commonInit {
-    self.loopPlayCount = -1;
-    self.autoPlayWhenReadyToPlay = NO;
-    
-    __weak typeof(self) wself = self;
-    self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
-    [self.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 5) queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
-        CGFloat progress = CMTimeGetSeconds(wself.player.currentItem.currentTime) / CMTimeGetSeconds(wself.player.currentItem.duration);
-        if (wself.delegate && [wself.delegate respondsToSelector:@selector(playerView:playingWithProgress:currentTime:)]) {
-            CGFloat currentTime = wself.playerItem.currentTime.value / wself.playerItem.currentTime.timescale;
-            [wself.delegate playerView:wself playingWithProgress:progress currentTime:currentTime];
-        }
-        
-        wself.contentView.slider.value = progress;
-    }];
-    self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
-    [self.layer addSublayer:self.playerLayer];
-    
-    [self addObserver];
-}
-
-- (void)viewsCommonInit {
-    [self addSubview:self.contentView];
-}
-
-- (void)addObserver {
-    [self.observeBlocks enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, ObserveBlock  _Nonnull obj, BOOL * _Nonnull stop) {
-        [self.playerItem addObserver:self forKeyPath:key options:NSKeyValueObservingOptionNew context:nil];
-    }];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemPlaybackStalled:) name:AVPlayerItemPlaybackStalledNotification object:self.playerItem];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppResignActive:) name:UIApplicationWillResignActiveNotification object:self.playerItem];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:self.playerItem];
-}
-
-- (void)remoeObserver {
-    [self.observeBlocks enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, ObserveBlock  _Nonnull obj, BOOL * _Nonnull stop) {
-        [self.playerItem removeObserver:self forKeyPath:key];
-    }];
-    
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
-
-- (void)reload {
-    __weak typeof(self) wself = self;
-    [self.player replaceCurrentItemWithPlayerItem:self.playerItem];
-    [self.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 5) queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
-        CGFloat progress = CMTimeGetSeconds(wself.player.currentItem.currentTime) / CMTimeGetSeconds(wself.player.currentItem.duration);
-        if (wself.delegate && [wself.delegate respondsToSelector:@selector(playerView:playingWithProgress:currentTime:)]) {
-            CGFloat currentTime = wself.playerItem.currentTime.value / wself.playerItem.currentTime.timescale;
-            [wself.delegate playerView:wself playingWithProgress:progress currentTime:currentTime];
-        }
-        
-        wself.contentView.slider.value = progress;
-    }];
-    [self remoeObserver];
-    [self addObserver];
-}
-
-#pragma mark - Observer
-
-- (void)onPlayerItemDidPlayToEndTime:(NSNotification *)notification {
-    AVPlayerItem *playerItem = notification.object;
-    if (playerItem != self.playerItem) {
-        return;
-    }
-    
-    if (self.delegate && [self.delegate respondsToSelector:@selector(playerView:playingWithProgress:currentTime:)]) {
-        CGFloat currentTime = self.playerItem.currentTime.value / self.playerItem.currentTime.timescale;
-        CGFloat progress = CMTimeGetSeconds(self.player.currentItem.currentTime) / CMTimeGetSeconds(self.player.currentItem.duration);
-        [self.delegate playerView:self playingWithProgress:progress currentTime:currentTime];
-    }
-    
-    if (self.loopPlayCount > 0) {
-        self.loopPlayCount--;
-        [self pause];
-        [self seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
-            
-        }];
-        [self play];
-    }
-    else {
-        self.loopPlayCount = -1;
-    }
-}
-
-- (void)onAppResignActive:(NSNotification *)notification {
-    [self pause];
-}
-
-- (void)onAppBecomeActive:(NSNotification *)notification {
-    if (self.isPlaying) {
-        [self play];
-    }
-}
-
-- (void)onPlayerItemPlaybackStalled:(NSNotification *)notification {
-    
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
-    ObserveBlock observeBlock = self.observeBlocks[keyPath];
-    if (observeBlock) {
-        observeBlock(keyPath, object, change, context);
-    }
-}
-
-- (void)reset {
-    
-    if (self.playerItem) {
-        [self remoeObserver];
-    }
-    
-    [self.playerLayer removeFromSuperlayer];
-    self.playerLayer = nil;
-    
-    [self.player pause];
-    [self.player cancelPendingPrerolls];
-    self.player = nil;
-}
-
-#pragma mark - public method
-
-- (void)play {
-    [self.player play];
-}
-
-- (void)pause {
-    [self.player pause];
-}
-
-- (void)seekToTime:(CMTime)time completionHandler:(void (^)(BOOL finished))completionHandler {
-    [self.player seekToTime:time completionHandler:completionHandler];
-}
-
-- (void)setOverlapView:(UIView *)view {
-    [self.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    [self.contentView addSubview:view];
-}
-
-#pragma mark - setter
-
-- (void)setEnablePlayWhileDownload:(BOOL)enablePlayWhileDownload {
-    _enablePlayWhileDownload = enablePlayWhileDownload;
-    if (enablePlayWhileDownload) {
-        
-        [self reset];
-        
-        self.cache = BRPlayerViewCache.new;
-        self.cache.delegate = self;
-        
-        NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:self.URL resolvingAgainstBaseURL:NO];
-        actualURLComponents.scheme = @"streaming";
-        
-        AVURLAsset *urlAsset = [AVURLAsset assetWithURL:[actualURLComponents URL]];
-        [urlAsset.resourceLoader setDelegate:self.cache queue:dispatch_get_main_queue()];
-        self.playerItem = [AVPlayerItem playerItemWithAsset:urlAsset];
-        
-        [self commonInit];
-    }
-}
-
-- (void)setURL:(NSURL *)URL {
-    if (![URL.path isEqualToString:_URL.path]) {
-        _URL = URL;
-        self.playerItem = [AVPlayerItem playerItemWithURL:_URL];
-        [self commonInit];
-    }
-}
-
-- (void)setAsset:(AVAsset *)asset {
-    if (_asset !=  asset) {
-        _asset = asset;
-        self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
-        [self reload];
-    }
-}
-
-- (void)setDuration:(Float64)duration {
-    _duration = duration;
-    
-    self.contentView.endTimeLabel.text = @(duration).stringValue;
-}
-
 #pragma mark - getter
-
-- (NSDictionary<NSString *, ObserveBlock> *)observeBlocks {
-    if (!_observeBlocks) {
-        _observeBlocks = @{
-            @"status": [self statusBlock],
-            @"loadedTimeRanges": [self loadedTimeRangesBlock],
-            @"playbackBufferEmpty": [self playbackBufferEmptyBlock],
-            @"playbackLikelyToKeepUp": [self playbackLikelyToKeepUpBlock],
-        };
-    }
-    return _observeBlocks;
-}
-
-- (ObserveBlock)statusBlock {
-    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
-        AVPlayerItemStatus status = [change[NSKeyValueChangeNewKey] intValue];
-        if (status == AVPlayerItemStatusReadyToPlay) {
-            if (self.delegate && [self.delegate respondsToSelector:@selector(playerView:readyToPlayWithDuration:)]) {
-                [self.delegate playerView:self readyToPlayWithDuration:CMTimeGetSeconds(self.playerItem.duration)];
-            }
-            
-            self.duration = (NSInteger)round(CMTimeGetSeconds(self.playerItem.duration));
-            if (self.autoPlayWhenReadyToPlay) {
-                [self.player play];
-            }
-        }
-        else if (status == AVPlayerItemStatusFailed || status == AVPlayerItemStatusUnknown) {
-            if (self.delegate && [self.delegate respondsToSelector:@selector(playerView:failToPlayWithError:)]) {
-                NSError *error = [NSError errorWithDomain:@"" code:1000 userInfo:nil];
-                [self.delegate playerView:self failToPlayWithError:error];
-            }
-        }
-    };
-}
-
-- (ObserveBlock)loadedTimeRangesBlock {
-    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
-        CMTimeRange timeRange = [self.playerItem.loadedTimeRanges.firstObject CMTimeRangeValue];//本次缓冲时间范围
-        Float64 startSeconds = CMTimeGetSeconds(timeRange.start);
-        Float64 durationSeconds = CMTimeGetSeconds(timeRange.duration);
-        NSTimeInterval totalBuffer = startSeconds + durationSeconds;//缓冲总长度
-        
-        NSLog(@"当前缓冲时间:%f",totalBuffer);
-        
-        [self.player play];
-    };
-}
-
-- (ObserveBlock)playbackBufferEmptyBlock {
-    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
-        BOOL empty = [change[NSKeyValueChangeNewKey] intValue];
-        if (!empty) {
-            if (self.delegate && [self.delegate respondsToSelector:@selector(playerView:playingOrPauseStatusChange:)]) {
-                [self.delegate playerView:self playingOrPauseStatusChange:empty];
-            }
-        }
-    };
-}
-
-- (ObserveBlock)playbackLikelyToKeepUpBlock {
-    return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
-        if (self.delegate && [self.delegate respondsToSelector:@selector(playerView:playingOrPauseStatusChange:)]) {
-            [self.delegate playerView:self playingOrPauseStatusChange:YES];
-        }
-        
-        NSLog(@"isPlaybackLikelyToKeepUp is: %ld", (long)self.playerItem.isPlaybackLikelyToKeepUp);
-        
-        [self.player play];
-    };
-}
-
-#pragma mark - getter
-
-- (BRPlayerContentView *)contentView {
-    if (!_contentView) {
-        _contentView = [[BRPlayerContentView alloc] initWithFrame:CGRectZero];
-    }
-    return _contentView;
-}
-
-- (BOOL)isPlaying {
-    return self.player.rate == 0;
-}
 
 @end
 

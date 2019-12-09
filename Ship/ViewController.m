@@ -94,7 +94,7 @@
     
     self.playerView = [[BRPlayerView alloc] initWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"]];
     self.playerView.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
-    self.playerView.enablePlayWhileDownload = YES;
+//    self.playerView.enablePlayWhileDownload = YES;
     self.playerView.backgroundColor = [UIColor yellowColor];
     [self.view addSubview:self.playerView];
 }
@@ -125,7 +125,7 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     TableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TableViewCell"];
-    cell.playerView.URL = [NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip1" ofType:@"m4v"]];
+//    cell.playerView.URL = [NSURL fileURLWithPath:[[NSBundle mainBundle] pathForResource:@"sample_clip1" ofType:@"m4v"]];
     cell.playerView.delegate = self;
 //    [cell.playerView scrollInRect:CGRectMake(0, 300, tableView.bounds.size.width, 300) scrollView:tableView];
 //    [cell.playerView scrollInCenterBaseLineWithScrollView:tableView];
