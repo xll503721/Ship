@@ -7,7 +7,7 @@
 //
 
 #import "BRPlayerView.h"
-
+#import "BRLog.h"
 
 static CGFloat kXlLPlayerToobarViewHeight = 30;
 static const char kBRPlayerViewSelf;
@@ -16,17 +16,7 @@ static const char kBRPlayerViewScrollViewDelegate;
 static const char kBRPlayerViewScrollViewScrollInRect;
 static const char kBRPlayerViewScrollViewScrollHitType;
 
-typedef struct _BRRange {
-    long long location;
-    long long length;
-} BRRange;
-
-NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
-    BRRange r;
-    r.location = loc;
-    r.length = len;
-    return r;
-}
+static NSString *BRPlayerURLScheme = @"BRURLScheme";
 
 #pragma mark - BRPlayer
 
@@ -41,9 +31,12 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 @property (nonatomic, strong) NSDictionary<NSString *, ObserveBlock> *observeBlocks;
 @property (nonatomic, assign) Float64 duration;
 
-@property (nonatomic, strong) BRPlayerViewCache *cache;
+@property (nonatomic, strong) id<AVAssetResourceLoaderDelegate> cache;
 
 @property (nonatomic, assign) BOOL isPlaying;
+@property (nonatomic, assign) BOOL _autoPlayWhenReadyToPlay;
+@property (nonatomic, assign) BOOL _enablePlayWhileDownload;
+@property (nonatomic, assign) NSInteger _loopPlayCount;
 
 /// playing URL
 @property (nonatomic, strong) NSURL *URL;
@@ -78,6 +71,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     self = [super init];
     if (self) {
         
+        self.asset = asset;
         self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
         
         [self commonInit];
@@ -89,6 +83,8 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 {
     self = [super init];
     if (self) {
+        
+        self.asset = asset;
         self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
         self.playerItem.videoComposition = videoComposition;
         self.playerItem.audioMix = audioMix;
@@ -112,6 +108,9 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     }];
     self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
     self.layer = self.playerLayer;
+    
+    self._autoPlayWhenReadyToPlay = YES;
+    self._loopPlayCount = -1;
     
     [self addObserver];
 }
@@ -233,30 +232,73 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 
 - (void)reloadWithURL:(NSURL *)URL {
     [self reset];
-    
-    
+}
+
+- (void)attachView:(UIView *)view {
+    if (![view conformsToProtocol:@protocol(BRPlayerProtocol)]) {
+        BRDebugLog(@"can not attache class of %@ view, because that not conforms `BRPlayerProtocol`", view.class);
+        return;
+    }
+}
+
+#pragma mark - private
+
+- (NSURL *)composeFakeVideoURL {
+    NSURLComponents *components = [[NSURLComponents alloc] initWithURL:self.URL resolvingAgainstBaseURL:NO];
+    components.scheme = BRPlayerURLScheme;
+    return [components URL];
 }
 
 #pragma mark - setter
 
+- (void)setAutoPlayWhenReadyToPlay:(BOOL)autoPlayWhenReadyToPlay {
+    __autoPlayWhenReadyToPlay = autoPlayWhenReadyToPlay;
+}
+
+- (BOOL)autoPlayWhenReadyToPlay {
+    return __autoPlayWhenReadyToPlay;
+}
+
+- (void)setLoopPlayCount:(NSInteger)loopPlayCount {
+    __loopPlayCount = loopPlayCount;
+}
+
+- (NSInteger)loopPlayCount {
+    return __loopPlayCount;
+}
+
 - (void)setEnablePlayWhileDownload:(BOOL)enablePlayWhileDownload {
-    self.enablePlayWhileDownload = enablePlayWhileDownload;
-//    if (enablePlayWhileDownload) {
-//
-//        [self reset];
-//
-////        self.cache = BRPlayerViewCache.new;
-////        self.cache.delegate = self;
-//
-//        NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:self.URL resolvingAgainstBaseURL:NO];
-//        actualURLComponents.scheme = @"streaming";
-//
-//        AVURLAsset *urlAsset = [AVURLAsset assetWithURL:[actualURLComponents URL]];
-//        [urlAsset.resourceLoader setDelegate:self.cache queue:dispatch_get_main_queue()];
-//        self.playerItem = [AVPlayerItem playerItemWithAsset:urlAsset];
-//
-//        [self commonInit];
-//    }
+    __enablePlayWhileDownload = enablePlayWhileDownload;
+    if (!enablePlayWhileDownload) {
+        [self reset];
+        
+        if (self.asset) {
+            self.playerItem = [AVPlayerItem playerItemWithAsset:self.asset];
+        }
+        
+        if (self.URL) {
+            self.playerItem = [AVPlayerItem playerItemWithURL:self.URL];
+        }
+        
+        [self commonInit];
+        return;
+    }
+    
+    if (!self.dataSource || ![self.dataSource respondsToSelector:@selector(player:)]) {
+        @throw [NSException exceptionWithName:@"BRPlayerException" reason:@"dataSource required method not implement" userInfo:nil];
+    }
+    
+    [self reset];
+    
+    self.cache = [self.dataSource player:self];
+    AVURLAsset *videoURLAsset = [AVURLAsset URLAssetWithURL:[self composeFakeVideoURL] options:nil];
+    [videoURLAsset.resourceLoader setDelegate:self.cache queue:dispatch_get_main_queue()];
+    self.playerItem = [AVPlayerItem playerItemWithAsset:videoURLAsset];
+    [self commonInit];
+}
+
+- (BOOL)enablePlayWhileDownload {
+    return __enablePlayWhileDownload;
 }
 
 - (void)setURL:(NSURL *)URL {
@@ -329,7 +371,9 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         
         NSLog(@"当前缓冲时间:%f",totalBuffer);
         
-        [self.player play];
+        if (self.autoPlayWhenReadyToPlay) {
+            [self.player play];
+        }
     };
 }
 
@@ -351,261 +395,10 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         }
         
         NSLog(@"isPlaybackLikelyToKeepUp is: %ld", (long)self.playerItem.isPlaybackLikelyToKeepUp);
-        
-        [self.player play];
-    };
-}
-
-@end
-
-
-
-#pragma mark - BRPlayerViewDownload
-
-@interface BRPlayerViewDownload : NSObject
-
-@end
-
-@protocol BRPlayerViewDownloadDelegate <NSObject>
-
-- (void)download:(BRPlayerViewDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response;
-- (void)download:(BRPlayerViewDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response contentLength:(int64_t)length contentType:(NSString *)type contentRange:(BRRange)range;
-- (void)download:(BRPlayerViewDownload *)download didReceiveData:(NSData *)data;
-- (void)download:(BRPlayerViewDownload *)download didCompleteWithError:(NSError *)error;
-
-@end
-
-@interface BRPlayerViewDownload () <NSURLSessionDelegate, NSURLSessionDataDelegate>
-
-@property (nonatomic, strong) NSURLSessionDataTask *dataTask;
-@property (nonatomic, strong) NSArray<NSString *> *allHeaderKeys;
-@property (nonatomic, weak) id<BRPlayerViewDownloadDelegate> delegagte;
-@property (nonatomic, assign) NSRange range;
-
-@property (nonatomic, strong) NSFileHandle *writeHandle;
-@property (nonatomic, strong) NSMutableData *data;
-
-@end
-
-@implementation BRPlayerViewDownload
-
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        NSString *document = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-        NSString *tempPath =  [document stringByAppendingPathComponent:@"temp.mp4"];
-        
-        if ([[NSFileManager defaultManager] fileExistsAtPath:tempPath]) {
-            [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
-            [[NSFileManager defaultManager] createFileAtPath:tempPath contents:nil attributes:nil];
-            
-        } else {
-            [[NSFileManager defaultManager] createFileAtPath:tempPath contents:nil attributes:nil];
+        if (self.autoPlayWhenReadyToPlay) {
+            [self.player play];
         }
-        
-        self.writeHandle = [NSFileHandle fileHandleForWritingAtPath:tempPath];
-    }
-    return self;
-}
-
-- (instancetype)initWithURL:(NSURL *)URL
-{
-    self = [super init];
-    if (self) {
-        [self commonInitWithURL:URL];
-    }
-    return self;
-}
-
-- (instancetype)initWithURL:(NSURL *)URL reqeustRange:(NSRange)range
-{
-    self = [super init];
-    if (self) {
-        
-        NSString *document = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-        NSString *tempPath =  [document stringByAppendingPathComponent:@"temp.mp4"];
-        self.writeHandle = [NSFileHandle fileHandleForWritingAtPath:tempPath];
-        
-        [self commonInitWithURL:URL];
-        self.range = range;
-    }
-    return self;
-}
-
-- (void)commonInitWithURL:(NSURL *)URL {
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:20.0];
-    [request setValue:[NSString stringWithFormat:@"bytes=%ld-%ld", self.range.location, self.range.length] forHTTPHeaderField:@"Range"];
-    NSURLSessionConfiguration * configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSURLSession *sharedSession = [NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:nil];
-    self.dataTask = [sharedSession dataTaskWithRequest:request];
-}
-
-- (void)startWithURL:(NSURL *)URL reqeustRange:(NSRange)range {
-    self.range = range;
-    [self commonInitWithURL:URL];
-    [self.dataTask resume];
-}
-
-- (NSString *)headerFieldWithKey:(NSString *)key allHeaderFields:(NSDictionary<NSString *, NSString *> *)headerFields {
-    NSString *value = headerFields[key];
-    if (![value isEqualToString:@""] && value) {
-        return value;
-    }
-    return nil;
-}
-
-#pragma mark - NSURLSession delegate
-
-- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler {
-    
-    NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse*)response;
-    if (![httpResponse isKindOfClass:[NSHTTPURLResponse class]]) {
-        completionHandler(NSURLSessionResponseCancel);
-        return;
-    }
-    
-    if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didReceiveResponse:)]) {
-        [self.delegagte download:self didReceiveResponse:httpResponse];
-    }
-    else if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didReceiveResponse:contentLength:contentType:contentRange:)]) {
-        
-        NSDictionary<NSString *, NSString *> *allHeaderFields = httpResponse.allHeaderFields;
-        NSString *contentRange = [self headerFieldWithKey:@"Content-Range" allHeaderFields:allHeaderFields];
-        NSString *contentType = [self headerFieldWithKey:@"Content-Type" allHeaderFields:allHeaderFields];
-        NSArray<NSString *> *contentRanges = [contentRange componentsSeparatedByString:@"/"];
-        NSArray<NSString *> *numbersContentRanges = [[contentRanges.firstObject componentsSeparatedByString:@" "].lastObject componentsSeparatedByString:@"-"];
-        
-        int64_t contentLength = httpResponse.expectedContentLength;
-        
-        [self.delegagte download:self didReceiveResponse:httpResponse contentLength:contentLength contentType:contentType contentRange:BRMakeRange(numbersContentRanges.firstObject.longLongValue, numbersContentRanges.lastObject.longLongValue)];
-    }
-    
-    completionHandler(NSURLSessionResponseAllow);
-}
-
-- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
-    didReceiveData:(NSData *)data {
-    
-    [self.writeHandle seekToEndOfFile];
-    [self.writeHandle writeData:data];
-    
-    if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didReceiveData:)]) {
-        [self.delegagte download:self didReceiveData:data];
-    }
-}
-
-- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task
-didCompleteWithError:(nullable NSError *)error {
-    if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didCompleteWithError:)]) {
-        [self.delegagte download:self didCompleteWithError:error];
-    }
-}
-
-#pragma mark - getter
-
-- (NSArray<NSString *> *)allHeaderKeys {
-    return @[@"Content-Range"];
-}
-
-@end
-
-#pragma mark - BRPlayerViewCache
-
-@protocol BRPlayerViewCacheDelegate <NSObject>
-
-
-
-@end
-
-@interface BRPlayerViewCache : NSObject <AVAssetResourceLoaderDelegate, BRPlayerViewDownloadDelegate>
-
-@property (nonatomic, strong) NSMutableArray<AVAssetResourceLoadingRequest *> *pendingRequests;
-@property (nonatomic, weak) id<BRPlayerViewCacheDelegate> delegate;
-
-@property (nonatomic, strong) BRPlayerViewDownload *download;
-
-@end
-
-
-@implementation BRPlayerViewCache
-
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        self.pendingRequests = @[].mutableCopy;
-    }
-    return self;
-}
-
-- (NSRange)fetchRequestRangeWithRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
-    NSUInteger location, length;
-    // data range.
-    if ([loadingRequest.dataRequest respondsToSelector:@selector(requestsAllDataToEndOfResource)] && loadingRequest.dataRequest.requestsAllDataToEndOfResource) {
-        location = (NSUInteger)loadingRequest.dataRequest.requestedOffset;
-        length = NSUIntegerMax;
-    }
-    else {
-        location = (NSUInteger)loadingRequest.dataRequest.requestedOffset;
-        length = loadingRequest.dataRequest.requestedLength;
-    }
-    if(loadingRequest.dataRequest.currentOffset > 0){
-        location = (NSUInteger)loadingRequest.dataRequest.currentOffset;
-    }
-    return NSMakeRange(location, length);
-}
-
-#pragma mark -
-
-- (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest {
-    
-    [self.pendingRequests addObject:loadingRequest];
-//    [self downloadMediaFragmentWithRequest:loadingRequest];
-    return YES;
-}
-
-- (void)resourceLoader:(AVAssetResourceLoader *)resourceLoader didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
-    [self.pendingRequests removeObject:loadingRequest];
-}
-
-- (void)downloadMediaFragmentWithRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
-    NSURL *URL = loadingRequest.request.URL;
-    NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:URL resolvingAgainstBaseURL:NO];
-    actualURLComponents.scheme = @"http";
-
-    NSRange reqRange = [self fetchRequestRangeWithRequest:loadingRequest];
-    [self.download startWithURL:[actualURLComponents URL] reqeustRange:reqRange];
-}
-
-#pragma mark - BRPlayerViewDownload Delegate
-
-- (void)download:(BRPlayerViewDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response contentLength:(int64_t)length contentType:(NSString *)type contentRange:(BRRange)range {
-    
-}
-
-- (void)download:(BRPlayerViewDownload *)download didReceiveData:(NSData *)data {
-    [self.pendingRequests.firstObject.dataRequest respondWithData:data];
-}
-
-- (void)download:(BRPlayerViewDownload *)download didCompleteWithError:(NSError *)error {
-    if (error) {
-        return;
-    }
-    
-    [self.pendingRequests enumerateObjectsUsingBlock:^(AVAssetResourceLoadingRequest * _Nonnull req, NSUInteger idx, BOOL * _Nonnull stop) {
-        [req finishLoading];
-    }];
-}
-
-#pragma mark - getter
-
-- (BRPlayerViewDownload *)download {
-    if (!_download) {
-        _download = BRPlayerViewDownload.new;
-        _download.delegagte = self;
-    }
-    return _download;
+    };
 }
 
 @end
@@ -724,12 +517,28 @@ didCompleteWithError:(nullable NSError *)error {
 
 @interface BRPlayerView ()
 
-
-
 @end
 
 @implementation BRPlayerView
 
+- (instancetype)initWithURL:(NSURL *)URL {
+    self = [super init];
+    if (self) {
+        _player = [[BRPlayer alloc] initWithURL:URL];
+        [self.layer addSublayer:_player.layer];
+    }
+    return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    
+    self.player.layer.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
+}
+
+- (void)onPlayButton {
+    [self play];
+}
 
 #pragma mark - getter
 

@@ -13,12 +13,13 @@
 #import "BRImageCommand.h"
 #import "BRClipCommand.h"
 #import "BRPlayerView.h"
+#import "BRPlayerCache.h"
 
 #import "APLCompositionDebugView.h"
 
 #import "TableViewCell.h"
 
-@interface ViewController ()<UIScrollViewDelegate, UITableViewDelegate, UITableViewDataSource, BRPlayerViewDeleate>
+@interface ViewController ()<UIScrollViewDelegate, UITableViewDelegate, UITableViewDataSource, BRPlayerViewDeleate, BRPlayerCacheDataSource>
 
 @property (nonatomic, strong) BRPlayerView *playerView;
 @property (nonatomic, strong) BRPlayerView *playerView2;
@@ -94,9 +95,27 @@
     
     self.playerView = [[BRPlayerView alloc] initWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"]];
     self.playerView.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
+    self.playerView.player.dataSource = self;
+    self.playerView.player.enablePlayWhileDownload = YES;
 //    self.playerView.enablePlayWhileDownload = YES;
     self.playerView.backgroundColor = [UIColor yellowColor];
     [self.view addSubview:self.playerView];
+}
+
+- (id<AVAssetResourceLoaderDelegate>)player:(BRPlayer *)player {
+    return BRPlayerCache.new;
+}
+
+- (void)download {
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+    NSURLSessionDataTask *task = [session dataTaskWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"] completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        
+    }];
+    
+//    NSURLSessionDownloadTask * task = [session downloadTaskWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"] completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+//        
+//    }];
+    [task resume];
 }
 
 - (void)viewWillLayoutSubviews {
@@ -129,7 +148,7 @@
     cell.playerView.delegate = self;
 //    [cell.playerView scrollInRect:CGRectMake(0, 300, tableView.bounds.size.width, 300) scrollView:tableView];
 //    [cell.playerView scrollInCenterBaseLineWithScrollView:tableView];
-    cell.playerView.loopPlayCount = 10;
+//    cell.playerView.loopPlayCount = 10;
     
     return cell;
 }

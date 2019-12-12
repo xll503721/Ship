@@ -10,7 +10,6 @@
 		5A0FC0E923716ADB00E9FBA4 /* TableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */; };
 		5A36D15D236ECFE600776A7A /* BRExportCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A36D15C236ECFE600776A7A /* BRExportCommand.m */; };
 		5A7C49E72366C09A001D8B2C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49E62366C09A001D8B2C /* AppDelegate.m */; };
-		5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49E92366C09A001D8B2C /* SceneDelegate.m */; };
 		5A7C49ED2366C09A001D8B2C /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49EC2366C09A001D8B2C /* ViewController.m */; };
 		5A7C49F02366C09A001D8B2C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5A7C49EE2366C09A001D8B2C /* Main.storyboard */; };
 		5A7C49F22366C09A001D8B2C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5A7C49F12366C09A001D8B2C /* Assets.xcassets */; };
@@ -29,6 +28,8 @@
 		5AAC6D45236E5F2D00A20B43 /* sample_clip2.mov in Resources */ = {isa = PBXBuildFile; fileRef = 5AAC6D43236E5F2D00A20B43 /* sample_clip2.mov */; };
 		5AAC6D4A236E69E800A20B43 /* sample_clip1.m4v in Resources */ = {isa = PBXBuildFile; fileRef = 5AAC6D49236E69E800A20B43 /* sample_clip1.m4v */; };
 		5AAC6D4D236E724700A20B43 /* APLCompositionDebugView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5AAC6D4B236E724700A20B43 /* APLCompositionDebugView.m */; };
+		5ACD607D239E161D00D12A95 /* BRPlayerCache.m in Sources */ = {isa = PBXBuildFile; fileRef = 5ACD607C239E161D00D12A95 /* BRPlayerCache.m */; };
+		5ACD6080239E22F500D12A95 /* BRLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 5ACD607F239E22F500D12A95 /* BRLog.m */; };
 		5AEB48002373B4B400B26CD1 /* BRPlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5AEB47FF2373B4B300B26CD1 /* BRPlayerView.m */; };
 /* End PBXBuildFile section */
 
@@ -57,8 +58,6 @@
 		5A7C49E22366C09A001D8B2C /* Ship.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ship.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A7C49E52366C09A001D8B2C /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5A7C49E62366C09A001D8B2C /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		5A7C49E82366C09A001D8B2C /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
-		5A7C49E92366C09A001D8B2C /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
 		5A7C49EB2366C09A001D8B2C /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		5A7C49EC2366C09A001D8B2C /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		5A7C49EF2366C09A001D8B2C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -96,6 +95,10 @@
 		5AAC6D49236E69E800A20B43 /* sample_clip1.m4v */ = {isa = PBXFileReference; lastKnownFileType = file; path = sample_clip1.m4v; sourceTree = "<group>"; };
 		5AAC6D4B236E724700A20B43 /* APLCompositionDebugView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = APLCompositionDebugView.m; sourceTree = "<group>"; };
 		5AAC6D4C236E724700A20B43 /* APLCompositionDebugView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = APLCompositionDebugView.h; sourceTree = "<group>"; };
+		5ACD607B239E161D00D12A95 /* BRPlayerCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BRPlayerCache.h; sourceTree = "<group>"; };
+		5ACD607C239E161D00D12A95 /* BRPlayerCache.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BRPlayerCache.m; sourceTree = "<group>"; };
+		5ACD607E239E22F500D12A95 /* BRLog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BRLog.h; sourceTree = "<group>"; };
+		5ACD607F239E22F500D12A95 /* BRLog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BRLog.m; sourceTree = "<group>"; };
 		5AEB47FF2373B4B300B26CD1 /* BRPlayerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BRPlayerView.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -153,13 +156,11 @@
 				5AAC6D40236E5EC900A20B43 /* Command */,
 				5A7C49E52366C09A001D8B2C /* AppDelegate.h */,
 				5A7C49E62366C09A001D8B2C /* AppDelegate.m */,
-				5A7C49E82366C09A001D8B2C /* SceneDelegate.h */,
-				5A7C49E92366C09A001D8B2C /* SceneDelegate.m */,
 				5A7C49EB2366C09A001D8B2C /* ViewController.h */,
 				5A7C49EC2366C09A001D8B2C /* ViewController.m */,
 				5A7C49EE2366C09A001D8B2C /* Main.storyboard */,
-				5A7C49F12366C09A001D8B2C /* Assets.xcassets */,
 				5A7C49F32366C09A001D8B2C /* LaunchScreen.storyboard */,
+				5A7C49F12366C09A001D8B2C /* Assets.xcassets */,
 				5A7C49F62366C09A001D8B2C /* Info.plist */,
 				5A7C49F72366C09A001D8B2C /* main.m */,
 				5A7C4A1D2366C378001D8B2C /* xlLReceiver.h */,
@@ -175,6 +176,10 @@
 				5AEB47FF2373B4B300B26CD1 /* BRPlayerView.m */,
 				5A0FC0E723716ADB00E9FBA4 /* TableViewCell.h */,
 				5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */,
+				5ACD607B239E161D00D12A95 /* BRPlayerCache.h */,
+				5ACD607C239E161D00D12A95 /* BRPlayerCache.m */,
+				5ACD607E239E22F500D12A95 /* BRLog.h */,
+				5ACD607F239E22F500D12A95 /* BRLog.m */,
 			);
 			path = Ship;
 			sourceTree = "<group>";
@@ -369,10 +374,11 @@
 				5A8752DD23699C8F00091902 /* BRTransitionCommand.m in Sources */,
 				5A8752DA23699B0600091902 /* BRWaterMarkCommand.m in Sources */,
 				5A36D15D236ECFE600776A7A /* BRExportCommand.m in Sources */,
+				5ACD6080239E22F500D12A95 /* BRLog.m in Sources */,
 				5A7C4A2F2366D814001D8B2C /* BRCommand.m in Sources */,
+				5ACD607D239E161D00D12A95 /* BRPlayerCache.m in Sources */,
 				5A7C4A222366C765001D8B2C /* BRStitchCommand.m in Sources */,
 				5A0FC0E923716ADB00E9FBA4 /* TableViewCell.m in Sources */,
-				5A7C49EA2366C09A001D8B2C /* SceneDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

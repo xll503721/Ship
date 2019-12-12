@@ -46,7 +46,7 @@
         
         AVMutableCompositionTrack *mutableAudioCompositionTrack = [asset mutableTrackCompatibleWithTrack:assetAudioTrack];
         [mutableAudioCompositionTrack removeTimeRange:CMTimeRangeMake(CMTimeMake(self.fromSecond, 1), CMTimeMake(self.toSecond, 1))];
-    }
+    }   
 }
 
 @end
