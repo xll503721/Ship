@@ -8,6 +8,11 @@
 
 #import "BRPlayerCache.h"
 
+#import <CommonCrypto/CommonCrypto.h>
+#import <MobileCoreServices/MobileCoreServices.h>
+
+#import "BRLog.h"
+
 static NSString *BRVideoPlayerURLScheme = @"com.long.xlL.BRKit";
 static NSString *BRVideoPlayerURL = @"www.long.com";
 
@@ -23,13 +28,47 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
     return r;
 }
 
-@interface NSHTTPURLResponse (BRPlayerCache)
+@interface NSData (BRPlayerCache)
+
+- (NSString *)md5String;
 
 @end
 
+@implementation NSData (BRPlayerCache)
+
+- (NSString *)md5String {
+    unsigned char result[CC_MD5_DIGEST_LENGTH];
+    CC_MD5(self.bytes, (CC_LONG)self.length, result);
+    return [NSString stringWithFormat:
+            @"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+            result[0], result[1], result[2], result[3],
+            result[4], result[5], result[6], result[7],
+            result[8], result[9], result[10], result[11],
+            result[12], result[13], result[14], result[15]
+            ];
+}
+
+@end
+
+@interface NSString (BRPlayerCache)
+
+- (NSString *)md5String;
+
+@end
+
+@implementation NSString (BRPlayerCache)
+
+- (NSString *)md5String {
+    return [[self dataUsingEncoding:NSUTF8StringEncoding] md5String];
+}
+
+@end
+
+#pragma mark - NSHTTPURLResponse(BRPlayerCache)
+
 @implementation NSHTTPURLResponse (BRPlayerCache)
 
-- (long long)br_fileLength {
+- (long long)br_fileTotalLength {
     NSString *range = [self allHeaderFields][@"Content-Range"];
     if (range) {
         NSArray *ranges = [range componentsSeparatedByString:@"/"];
@@ -46,64 +85,85 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
 
 @end
 
+#pragma mark - BRPlayerCacheLocalFile
+
+@interface BRPlayerCacheLocalFile : NSObject
+
+@property (nonatomic, strong) NSFileHandle *writeFileHandle;
+@property (nonatomic, strong) NSFileHandle *readFileHandle;
+
+@property (nonatomic, strong) NSURL *URL;
+
+@end
+
+@implementation BRPlayerCacheLocalFile
+
+- (instancetype)initWithURL:(NSURL *)URL
+{
+    self = [super init];
+    if (self) {
+        _URL = URL;
+        
+        [self commonInit];
+    }
+    return self;
+}
+
+- (void)commonInit {
+    NSString *fileNameMD5 = [self.URL.absoluteString md5String];
+//    NSString *path = [BRVideoPlayerURLScheme stringByAppendingPathComponent:fileNameMD5];
+    NSString *document = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).lastObject;
+    NSString *fullPath = [document stringByAppendingPathComponent:fileNameMD5];
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:fullPath]) {
+        [fileManager createFileAtPath:fullPath contents:nil attributes:nil];
+    }
+    
+    self.writeFileHandle = [NSFileHandle fileHandleForWritingAtPath:fullPath];
+}
+
+@end
+
 #pragma mark - BRPlayerViewDownload
 
-@interface BRPlayerViewDownload : NSObject
+@interface BRPlayerCacheWebDownload : NSObject
 
 @end
 
 @protocol BRPlayerViewDownloadDelegate <NSObject>
 
-- (void)download:(BRPlayerViewDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response;
-- (void)download:(BRPlayerViewDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response contentLength:(int64_t)length totalLength:(int64_t)totalLength contentType:(NSString *)type contentRange:(BRRange)range;
-- (void)download:(BRPlayerViewDownload *)download didReceiveData:(NSData *)data;
-- (void)download:(BRPlayerViewDownload *)download didCompleteWithError:(NSError *)error;
+@optional
+- (void)download:(BRPlayerCacheWebDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response;
+- (void)download:(BRPlayerCacheWebDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response contentLength:(int64_t)length totalLength:(int64_t)totalLength contentType:(NSString *)type contentRange:(BRRange)range;
+- (void)download:(BRPlayerCacheWebDownload *)download didReceiveData:(NSData *)data;
+- (void)download:(BRPlayerCacheWebDownload *)download didCompleteWithError:(NSError *)error;
 
 @end
 
-@interface BRPlayerViewDownload () <NSURLSessionDelegate, NSURLSessionDataDelegate>
+@interface BRPlayerCacheWebDownload () <NSURLSessionDelegate, NSURLSessionDataDelegate>
 
 @property (nonatomic, strong) NSURLSessionDataTask *dataTask;
 @property (nonatomic, strong) NSArray<NSString *> *allHeaderKeys;
 @property (nonatomic, weak) id<BRPlayerViewDownloadDelegate> delegagte;
 @property (nonatomic, assign) NSRange range;
 
-@property (nonatomic, strong) NSFileHandle *writeFileHandle;
-@property (nonatomic, strong) NSFileHandle *readFileHandle;
 @property (nonatomic, strong) NSMutableData *data;
-
 @property (nonatomic, strong) AVAssetResourceLoadingRequest *assetResourceLoadingRequest;
+
+@property (nonatomic, strong) BRPlayerCacheLocalFile *localFile;
 
 @end
 
-@implementation BRPlayerViewDownload
-
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        NSString *document = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-        NSString *tempPath =  [document stringByAppendingPathComponent:@"temp.mp4"];
-        
-        if ([[NSFileManager defaultManager] fileExistsAtPath:tempPath]) {
-            [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
-            [[NSFileManager defaultManager] createFileAtPath:tempPath contents:nil attributes:nil];
-            
-        }
-        else {
-            [[NSFileManager defaultManager] createFileAtPath:tempPath contents:nil attributes:nil];
-        }
-        
-        self.writeFileHandle = [NSFileHandle fileHandleForWritingAtPath:tempPath];
-    }
-    return self;
-}
+@implementation BRPlayerCacheWebDownload
 
 - (instancetype)initWithURL:(NSURL *)URL
 {
     self = [super init];
     if (self) {
         [self commonInitWithURL:URL];
+        
+        _localFile = [[BRPlayerCacheLocalFile alloc] initWithURL:URL];
     }
     return self;
 }
@@ -118,7 +178,9 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
         NSURLComponents *components = [[NSURLComponents alloc] initWithURL:request.request.URL resolvingAgainstBaseURL:NO];
         components.scheme = @"http";
         
-        [self commonInitWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"]];
+        [self commonInitWithURL:[components URL]];
+        
+        _localFile = [[BRPlayerCacheLocalFile alloc] initWithURL:[components URL]];
     }
     return self;
 }
@@ -128,14 +190,22 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
     self = [super init];
     if (self) {
         
-        NSString *document = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-        NSString *tempPath =  [document stringByAppendingPathComponent:@"temp.mp4"];
-        self.writeFileHandle = [NSFileHandle fileHandleForWritingAtPath:tempPath];
-        
+        _range = range;
         [self commonInitWithURL:URL];
-        self.range = range;
+        
+        _localFile = [[BRPlayerCacheLocalFile alloc] initWithURL:URL];
     }
     return self;
+}
+
+- (void)reloadWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
+    _assetResourceLoadingRequest = request;
+    _range = [self fetchRequestRangeWithRequest:request];
+    
+    NSURLComponents *components = [[NSURLComponents alloc] initWithURL:request.request.URL resolvingAgainstBaseURL:NO];
+    components.scheme = @"http";
+    
+    [self commonInitWithURL:[components URL]];
 }
 
 - (NSRange)fetchRequestRangeWithRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
@@ -159,7 +229,12 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
 }
 
 - (void)start {
+    BRDebugLog(@"originalRequest is: %@", self.dataTask.originalRequest.allHTTPHeaderFields);
     [self.dataTask resume];
+}
+
+- (void)cancel {
+    [self.dataTask cancel];
 }
 
 - (void)commonInitWithURL:(NSURL *)URL {
@@ -172,12 +247,6 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
     self.dataTask = [sharedSession dataTaskWithRequest:request];
     
     self.data = [NSMutableData data];
-}
-
-- (void)startWithURL:(NSURL *)URL reqeustRange:(NSRange)range {
-    self.range = range;
-    [self commonInitWithURL:URL];
-    [self.dataTask resume];
 }
 
 - (NSString *)headerFieldWithKey:(NSString *)key allHeaderFields:(NSDictionary<NSString *, NSString *> *)headerFields {
@@ -210,7 +279,7 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
         NSArray<NSString *> *numbersContentRanges = [[contentRanges.firstObject componentsSeparatedByString:@" "].lastObject componentsSeparatedByString:@"-"];
         
         int64_t contentLength = httpResponse.expectedContentLength;
-        int64_t fileLength = [httpResponse br_fileLength];
+        int64_t fileLength = [httpResponse br_fileTotalLength];
         
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.delegagte download:self didReceiveResponse:httpResponse contentLength:contentLength totalLength:fileLength  contentType:contentType contentRange:BRMakeRange(numbersContentRanges.firstObject.longLongValue, numbersContentRanges.lastObject.longLongValue)];
@@ -223,14 +292,15 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data {
     
-    [self.writeFileHandle seekToEndOfFile];
-    [self.writeFileHandle writeData:data];
-    
+    [self.localFile.writeFileHandle seekToEndOfFile];
+    [self.localFile.writeFileHandle writeData:data];
     [self.data appendData:data];
     
-    if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didReceiveData:)]) {
-        [self.delegagte download:self didReceiveData:data];
-    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didReceiveData:)]) {
+            [self.delegagte download:self didReceiveData:data];
+        }
+    });
 }
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error {
@@ -249,9 +319,92 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
 
 @end
 
+#pragma mark - BRPlayerCacheVideo
+
+@interface BRPlayerCacheMediaFile: NSObject<BRPlayerViewDownloadDelegate>
+
+@property (nonatomic, strong) BRPlayerCacheWebDownload *webDownload;
+@property (nonatomic, assign) NSInteger totalLength;
+@property (nonatomic, assign) NSInteger availableLength;
+@property (nonatomic, assign) BOOL saveFull;
+
+@property (nonatomic, strong) NSString *identify;
+
+@end
+
+@implementation BRPlayerCacheMediaFile
+
+- (instancetype)initWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request
+{
+    self = [super init];
+    if (self) {
+        [self commonInitWithResourceLoadingRequest:request];
+    }
+    return self;
+}
+
+- (void)commonInitWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
+    self.webDownload = [[BRPlayerCacheWebDownload alloc] initWithResourceLoadingRequest:request];
+    self.webDownload.delegagte = self;
+    [self.webDownload start];
+    
+    self.identify = [request.request.URL.absoluteString md5String];
+}
+
+- (void)reloadWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
+    [self.webDownload cancel];
+    [self.webDownload reloadWithResourceLoadingRequest:request];
+    
+    [self.webDownload start];
+}
+
+- (BOOL)isEqual:(BRPlayerCacheMediaFile *)other
+{
+    if (other == self) {
+        return YES;
+    }
+    else {
+        return [self.identify isEqualToString:other.identify];
+    }
+}
+
+- (NSUInteger)hash
+{
+    return self.identify.hash ^ self.totalLength;
+}
+
+#pragma mark - BRPlayerViewDownloadDelegate
+
+- (void)download:(BRPlayerCacheWebDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response contentLength:(int64_t)length totalLength:(int64_t)totalLength contentType:(NSString *)type contentRange:(BRRange)range {
+    
+    AVAssetResourceLoadingContentInformationRequest *contentInformationRequest = download.assetResourceLoadingRequest.contentInformationRequest;
+    
+    CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(type), NULL);
+    contentInformationRequest.byteRangeAccessSupported = YES;
+    contentInformationRequest.contentType = CFBridgingRelease(contentType);
+    contentInformationRequest.contentLength = totalLength;
+}
+
+- (void)download:(BRPlayerCacheWebDownload *)download didReceiveData:(NSData *)data {
+    
+}
+
+- (void)download:(BRPlayerCacheWebDownload *)download didCompleteWithError:(NSError *)error {
+    
+    //    [self.loadingAssetResourceLoadingRequest.dataRequest respondWithData:download.data];
+    [download.assetResourceLoadingRequest finishLoading];
+}
+
+
+@end
+
+#pragma mark - BRPlayerCache
+
 @interface BRPlayerCache () <AVAssetResourceLoaderDelegate>
 
-@property (nonatomic, strong) NSMutableArray<BRPlayerViewDownload *> *downloads;
+@property (nonatomic, strong) NSMutableArray<BRPlayerCacheMediaFile *> *mediaFiles;
+//Are dealing with mediaFile
+@property (nonatomic, strong) BRPlayerCacheMediaFile *mediaFile;
 @property (nonatomic, strong) NSMutableArray<AVAssetResourceLoadingRequest *> *assetResourceLoadingRequests;
 
 @property (nonatomic, strong) AVAssetResourceLoadingRequest *loadingAssetResourceLoadingRequest;
@@ -264,7 +417,8 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
 {
     self = [super init];
     if (self) {
-        _downloads = @[].mutableCopy;
+        _mediaFiles = @[].mutableCopy;
+        
         _assetResourceLoadingRequests = @[].mutableCopy;
     }
     return self;
@@ -277,78 +431,28 @@ NS_INLINE BRRange BRMakeRange(long long loc, long long len) {
 }
 
 - (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest {
-    NSLog(@"shouldWaitForLoadingOfRequestedResource");
     if (loadingRequest) {
-
-        BRPlayerViewDownload *download = [[BRPlayerViewDownload alloc] initWithResourceLoadingRequest:loadingRequest];
-        download.delegagte = self;
-        [self.downloads addObject:download];
-
-        [download start];
+        BRPlayerCacheMediaFile *mediaFile = [[BRPlayerCacheMediaFile alloc] initWithResourceLoadingRequest:loadingRequest];
+        NSInteger index = [self.mediaFiles indexOfObject:mediaFile];
+        if (index == NSNotFound) {
+            [self.mediaFiles addObject:mediaFile];
+            self.mediaFile = mediaFile;
+            return YES;
+        }
         
-//        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"] cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:20.0];
-//
-//        NSRange range = [self fetchRequestRangeWithRequest:loadingRequest];
-//        [request setValue:[NSString stringWithFormat:@"bytes=%ld-%ld", range.location, range.length] forHTTPHeaderField:@"Range"];
-//
-//        NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
-//        NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-//
-//            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse*)response;
-//
-//            CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(@"video/mp4"), NULL);
-//            loadingRequest.contentInformationRequest.byteRangeAccessSupported = YES;
-//            loadingRequest.contentInformationRequest.contentType = CFBridgingRelease(contentType);
-//            loadingRequest.contentInformationRequest.contentLength = [httpResponse br_fileLength];
-//
-//            [loadingRequest.dataRequest respondWithData:data];
-//            [loadingRequest finishLoading];
-//        }];
-//
-//        [task resume];
+        BRPlayerCacheMediaFile *requestingMediaFile = [self.mediaFiles objectAtIndex:index];
+        [requestingMediaFile reloadWithResourceLoadingRequest:loadingRequest];
     }
     
     return YES;
 }
 
-- (NSRange)fetchRequestRangeWithRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
-    NSUInteger location = 0;
-    NSUInteger length = 0;
-    
-    if ([loadingRequest.dataRequest respondsToSelector:@selector(requestsAllDataToEndOfResource)] && loadingRequest.dataRequest.requestsAllDataToEndOfResource) {
-        location = (NSUInteger)loadingRequest.dataRequest.requestedOffset;
-        length = NSUIntegerMax;
-    }
-    else {
-        location = (NSUInteger)loadingRequest.dataRequest.requestedOffset;
-        length = loadingRequest.dataRequest.requestedLength;
-    }
-    
-    if(loadingRequest.dataRequest.currentOffset > 0){
-        location = (NSUInteger)loadingRequest.dataRequest.currentOffset;
-    }
-    
-    return NSMakeRange(location, length);
-}
-
 - (void)resourceLoader:(AVAssetResourceLoader *)resourceLoader didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
-    
-}
-
-- (void)download:(BRPlayerViewDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response contentLength:(int64_t)length totalLength:(int64_t)totalLength contentType:(NSString *)type contentRange:(BRRange)range {
-    
-    AVAssetResourceLoadingContentInformationRequest *contentInformationRequest = download.assetResourceLoadingRequest.contentInformationRequest;
-    
-    CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(type), NULL);
-    contentInformationRequest.byteRangeAccessSupported = YES;
-    contentInformationRequest.contentType = CFBridgingRelease(contentType);
-    contentInformationRequest.contentLength = totalLength;
-}
-
-- (void)download:(BRPlayerViewDownload *)download didCompleteWithError:(NSError *)error {
-    
-//    [self.loadingAssetResourceLoadingRequest.dataRequest respondWithData:download.data];
-    [download.assetResourceLoadingRequest finishLoading];
+//    BRPlayerCacheMediaFile *mediaFile = [[BRPlayerCacheMediaFile alloc] initWithResourceLoadingRequest:loadingRequest];
+//    NSInteger index = [self.mediaFiles indexOfObject:mediaFile];
+//    if (index != NSNotFound) {
+//        [self.mediaFiles removeObjectAtIndex:index];
+//    }
 }
 
 @end
