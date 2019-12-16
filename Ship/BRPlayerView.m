@@ -338,7 +338,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (ObserveBlock)statusBlock {
     return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
         AVPlayerItemStatus status = [change[NSKeyValueChangeNewKey] intValue];
-        
+        BRDebugLog(@"status is: %@", status == AVPlayerItemStatusReadyToPlay ? @"AVPlayerItemStatusReadyToPlay" : @"AVPlayerItemStatusFailed");
         if (self.delegate && [self.delegate respondsToSelector:@selector(player:statusDidChange:)] && self.status != (BRPlayerStatus)status) {
             [self.delegate player:self statusDidChange:status];
         }

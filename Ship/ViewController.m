@@ -99,7 +99,11 @@
     self.playerView.player.enablePlayWhileDownload = YES;
 //    self.playerView.enablePlayWhileDownload = YES;
     self.playerView.backgroundColor = [UIColor yellowColor];
+    
+    [self.playerView.layer addSublayer:self.playerView.player.layer];
+    
     [self.view addSubview:self.playerView];
+    
 }
 
 - (id<AVAssetResourceLoaderDelegate>)player:(BRPlayer *)player {
@@ -108,13 +112,17 @@
 
 - (void)download {
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
-    NSURLSessionDataTask *task = [session dataTaskWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"] completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    
+    long long fromOffset = 0;
+    long long endOffset = 2;
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"]];
+    request.cachePolicy = NSURLRequestReloadIgnoringLocalAndRemoteCacheData;
+    NSString *range = [NSString stringWithFormat:@"bytes=%lld-%lld", fromOffset, endOffset];
+    [request setValue:range forHTTPHeaderField:@"Range"];
+    
+    NSURLSessionDataTask *task =[session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
     }];
-    
-//    NSURLSessionDownloadTask * task = [session downloadTaskWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"] completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-//        
-//    }];
     [task resume];
 }
 
