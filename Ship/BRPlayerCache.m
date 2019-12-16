@@ -222,10 +222,6 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
         location = loadingRequest.dataRequest.currentOffset;
     }
     
-    if (length == -1) {
-        
-    }
-    
     return BRMakeRange(location, length);
 }
 
@@ -389,10 +385,22 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
     return self.identify.hash ^ self.totalLength;
 }
 
+#pragma mark - public
+
+- (BOOL)isNewFileWithURL:(NSURL *)URL {
+    NSString *identify = [URL.absoluteString md5String];
+    return ![self.identify isEqualToString:identify];
+}
+
+- (void)cancelWithLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
+    
+}
+
 #pragma mark - BRPlayerViewDownloadDelegate
 
 - (void)download:(BRPlayerCacheWebDownload *)download didReceiveResponse:(NSHTTPURLResponse *)response contentLength:(int64_t)length totalLength:(int64_t)totalLength contentType:(NSString *)type contentRange:(BRRange)range {
     
+    BRDebugLog(@"文件总长度: %lld", totalLength);
     self.totalLength = totalLength;
     self.contentType = type;
     
@@ -411,7 +419,7 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 
 #pragma mark - setter
 
-- (void)setTotalLength:(NSInteger)totalLength {
+- (void)setTotalLength:(int64_t)totalLength {
     if (_totalLength == 0) {
         _totalLength = totalLength;
     }
@@ -461,29 +469,26 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 - (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest {
     if (loadingRequest) {
         BRDebugLog(@"========================接受到新的请求========================");
-        BRPlayerCacheMediaFile *mediaFile = [[BRPlayerCacheMediaFile alloc] initWithResourceLoadingRequest:loadingRequest];
-        NSInteger index = [self.mediaFiles indexOfObject:mediaFile];
-        if (index == NSNotFound) {
-            BRDebugLog(@"新的下载文件");
+        BOOL isNewFileURL = [self.mediaFile isNewFileWithURL:loadingRequest.request.URL];
+        if (!self.mediaFile || isNewFileURL) {
+            BRDebugLog(@"新下载文件");
+            
+            BRPlayerCacheMediaFile *mediaFile = [[BRPlayerCacheMediaFile alloc] initWithResourceLoadingRequest:loadingRequest];
             [self.mediaFiles addObject:mediaFile];
+            
             self.mediaFile = mediaFile;
-            return YES;
         }
-        
-        BRDebugLog(@"接着下载文件");
-        BRPlayerCacheMediaFile *requestingMediaFile = [self.mediaFiles objectAtIndex:index];
-        [requestingMediaFile reloadWithResourceLoadingRequest:loadingRequest];
+        else {
+            BRDebugLog(@"接着下载文件");
+            [self.mediaFile reloadWithResourceLoadingRequest:loadingRequest];
+        }
     }
     
     return YES;
 }
 
 - (void)resourceLoader:(AVAssetResourceLoader *)resourceLoader didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
-//    BRPlayerCacheMediaFile *mediaFile = [[BRPlayerCacheMediaFile alloc] initWithResourceLoadingRequest:loadingRequest];
-//    NSInteger index = [self.mediaFiles indexOfObject:mediaFile];
-//    if (index != NSNotFound) {
-//        [self.mediaFiles removeObjectAtIndex:index];
-//    }
+    [self.mediaFile cancelWithLoadingRequest:loadingRequest];
 }
 
 @end
