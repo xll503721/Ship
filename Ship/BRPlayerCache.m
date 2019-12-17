@@ -85,26 +85,71 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 
 @end
 
+#pragma mark - BRPlayerCacheFile
+
+@interface BRPlayerCacheFile : NSObject
+
+@property (nonatomic, assign) int64_t totalLength;
+@property (nonatomic, assign) int64_t availableLength;
+@property (nonatomic, strong) NSString *contentType;
+@property (nonatomic, strong) NSString *identify;
+@property (nonatomic, assign) BOOL dowloadComplete;
+@property (nonatomic, strong) NSURL *URL;
+
+@end
+
+@implementation BRPlayerCacheFile
+
+- (void)checkCloseFile {
+    if (self.availableLength >= self.totalLength) {
+        
+    }
+}
+
+#pragma mark - getter
+
+- (BOOL)dowloadComplete {
+    return self.availableLength >= self.totalLength;
+}
+
+#pragma mark - setter
+
+- (void)setTotalLength:(int64_t)totalLength {
+    if (_totalLength == 0) {
+        _totalLength = totalLength;
+    }
+}
+
+- (void)setContentType:(NSString *)contentType {
+    if (!_contentType || [_contentType isEqualToString:@""]) {
+        _contentType = contentType;
+    }
+}
+
+@end
+
 #pragma mark - BRPlayerCacheLocalFile
 
-@interface BRPlayerCacheLocalFile : NSObject
+@interface BRPlayerCacheLocalFile : BRPlayerCacheFile
 
 @property (nonatomic, strong) NSFileHandle *writeFileHandle;
 @property (nonatomic, strong) NSFileHandle *readFileHandle;
-
-@property (nonatomic, strong) NSURL *URL;
-
-@property (nonatomic, assign) int64_t totalLength;
 
 @end
 
 @implementation BRPlayerCacheLocalFile
 
+- (void)dealloc
+{
+    [_writeFileHandle closeFile];
+    [_readFileHandle closeFile];
+}
+
 - (instancetype)initWithURL:(NSURL *)URL
 {
     self = [super init];
     if (self) {
-        _URL = URL;
+        self.URL = URL;
         
         [self commonInit];
     }
@@ -123,6 +168,35 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
     }
     
     self.writeFileHandle = [NSFileHandle fileHandleForWritingAtPath:fullPath];
+}
+
+#pragma mark - public
+- (void)appendData:(NSData *)data offset:(int64_t)offset {
+    if ([self checkComplete]) {
+        return;
+    }
+    
+    [self.writeFileHandle seekToFileOffset:offset];
+    [self.writeFileHandle writeData:data];
+    [self.writeFileHandle synchronizeFile];
+    
+    self.availableLength += data.length;
+}
+
+- (void)appendData:(NSData *)data {
+    [self appendData:data offset:self.availableLength];
+}
+
+- (BOOL)checkComplete {
+    return self.availableLength >=  self.totalLength;
+}
+
+- (void)closeFileIfComplete {
+    if (![self checkComplete]) {
+        return;
+    }
+    
+    [self.writeFileHandle closeFile];
 }
 
 @end
@@ -293,9 +367,7 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data {
     
-    [self.localFile.writeFileHandle seekToEndOfFile];
-    [self.localFile.writeFileHandle writeData:data];
-    [self.data appendData:data];
+    [self.localFile appendData:data offset:self.range.location];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didReceiveData:)]) {
@@ -305,6 +377,7 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 }
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error {
+    [self.localFile closeFileIfComplete];
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didCompleteWithError:)]) {
             [self.delegagte download:self didCompleteWithError:error];
@@ -322,15 +395,9 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 
 #pragma mark - BRPlayerCacheVideo
 
-@interface BRPlayerCacheMediaFile: NSObject<BRPlayerViewDownloadDelegate>
+@interface BRPlayerCacheMediaFile: BRPlayerCacheFile<BRPlayerViewDownloadDelegate>
 
 @property (nonatomic, strong) BRPlayerCacheWebDownload *webDownload;
-@property (nonatomic, assign) int64_t totalLength;
-@property (nonatomic, strong) NSString *contentType;
-@property (nonatomic, assign) NSInteger availableLength;
-@property (nonatomic, assign) BOOL saveFull;
-
-@property (nonatomic, strong) NSString *identify;
 
 @end
 
@@ -410,27 +477,18 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 - (void)download:(BRPlayerCacheWebDownload *)download didReceiveData:(NSData *)data {
     BRDebugLog(@"接受到数据长度: %ld", data.length);
     [download.assetResourceLoadingRequest.dataRequest respondWithData:data];
+    
+    self.availableLength += data.length;
 }
 
 - (void)download:(BRPlayerCacheWebDownload *)download didCompleteWithError:(NSError *)error {
     BRDebugLog(@"下载完成，一共下载长度: %ld", download.data.length);
     [download.assetResourceLoadingRequest finishLoading];
+    
+    self.dowloadComplete = (self.availableLength >= self.totalLength);
+    BRDebugLog(@"总文件下载量: %lld", self.availableLength);
+    BRDebugLog(@"文件下载完成: %@", self.dowloadComplete ? @"是" : @"否");
 }
-
-#pragma mark - setter
-
-- (void)setTotalLength:(int64_t)totalLength {
-    if (_totalLength == 0) {
-        _totalLength = totalLength;
-    }
-}
-
-- (void)setContentType:(NSString *)contentType {
-    if (!_contentType || [_contentType isEqualToString:@""]) {
-        _contentType = contentType;
-    }
-}
-
 
 @end
 

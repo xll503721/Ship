@@ -99,15 +99,54 @@
     self.playerView.player.enablePlayWhileDownload = YES;
 //    self.playerView.enablePlayWhileDownload = YES;
     self.playerView.backgroundColor = [UIColor yellowColor];
-    
+
     [self.playerView.layer addSublayer:self.playerView.player.layer];
-    
+
     [self.view addSubview:self.playerView];
     
+//    [self testFileHandle];
 }
 
 - (id<AVAssetResourceLoaderDelegate>)player:(BRPlayer *)player {
     return BRPlayerCache.new;
+}
+
+- (void)testFileHandle {
+    NSFileHandle *inFile,*outFile;
+    NSData *buffer;
+    NSString *fileContent = @"这些是文件内容,这些是文件内容,这些是文件内容,这些是文件内容,这些是文件内容";
+    
+    NSString *document = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).lastObject;
+    NSString *testfullPath = [document stringByAppendingPathComponent:@"testFile.txt"];
+    NSString *outfullPath = [document stringByAppendingPathComponent:@"outFile.txt"];
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:testfullPath]) {
+        [fileManager createFileAtPath:testfullPath contents:[fileContent dataUsingEncoding:NSUTF8StringEncoding] attributes:nil];
+    }
+    
+    if (![fileManager fileExistsAtPath:outfullPath]) {
+        [fileManager createFileAtPath:outfullPath contents:nil attributes:nil];
+    }
+    
+    //读取文件
+    inFile = [NSFileHandle fileHandleForReadingAtPath:testfullPath];
+    //写入文件
+    outFile = [NSFileHandle fileHandleForWritingAtPath:outfullPath];
+    
+    if(inFile!=nil){
+        //读取文件内容
+        buffer = [inFile readDataToEndOfFile];
+        
+        //将文件的字节设置为0，因为他可能包含数据
+        [outFile truncateFileAtOffset:0];
+        
+        //将读取的内容内容写到outFile.txt中
+        [outFile writeData:buffer];
+        
+        //关闭输出
+        [outFile closeFile];
+    }
 }
 
 - (void)download {
