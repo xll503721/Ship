@@ -203,6 +203,9 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 
 #pragma mark - BRPlayerViewDownload
 
+static NSString *kBRPlayerCacheWebDownloadURLKey = @"kBRPlayerCacheWebDownloadURLKey";
+static NSString *kBRPlayerCacheWebDownloadRangeKey = @"kBRPlayerCacheWebDownloadRangeKey";
+
 @interface BRPlayerCacheWebDownload : NSObject
 
 @end
@@ -222,12 +225,17 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 @property (nonatomic, strong) NSURLSessionDataTask *dataTask;
 @property (nonatomic, strong) NSArray<NSString *> *allHeaderKeys;
 @property (nonatomic, weak) id<BRPlayerViewDownloadDelegate> delegagte;
+
 @property (nonatomic, assign) BRRange range;
+@property (nonatomic, assign) int64_t availableLength;
 
 @property (nonatomic, strong) NSMutableData *data;
-@property (nonatomic, strong) AVAssetResourceLoadingRequest *assetResourceLoadingRequest;
+@property (nonatomic, strong) AVAssetResourceLoadingRequest *loadingRequest;
+@property (nonatomic, strong) NSMutableArray<AVAssetResourceLoadingRequest *> *loadingRequests;
 
 @property (nonatomic, strong) BRPlayerCacheLocalFile *localFile;
+
+@property (nonatomic, strong) NSMutableArray<NSDictionary<NSString *, NSObject *> *> *requests;
 
 @end
 
@@ -248,14 +256,11 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 {
     self = [super init];
     if (self) {
-        _assetResourceLoadingRequest = request;
-        _range = [self fetchRequestRangeWithRequest:request];
-        
+        [self addResourceLoadingRequest:request];
+
         NSURLComponents *components = [[NSURLComponents alloc] initWithURL:request.request.URL resolvingAgainstBaseURL:NO];
         components.scheme = @"http";
-        
-        [self commonInitWithURL:[components URL]];
-        
+
         _localFile = [[BRPlayerCacheLocalFile alloc] initWithURL:[components URL]];
     }
     return self;
@@ -274,9 +279,9 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
     return self;
 }
 
-- (void)reloadWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
-    _assetResourceLoadingRequest = request;
-    _range = [self fetchRequestRangeWithRequest:request];
+- (void)addResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
+    [self.loadingRequests addObject:request];
+    self.range = [self fetchRequestRangeWithRequest:request];
     
     NSURLComponents *components = [[NSURLComponents alloc] initWithURL:request.request.URL resolvingAgainstBaseURL:YES];
     components.scheme = @"http";
@@ -300,6 +305,30 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 }
 
 - (void)start {
+    self.loadingRequest = self.loadingRequests.firstObject;
+    
+    NSDictionary<NSString *, NSObject *> *reqeust = self.requests.firstObject;
+    NSURL *URL = (NSURL *)reqeust[kBRPlayerCacheWebDownloadURLKey];
+    NSValue *rangeValue = (NSValue *)reqeust[kBRPlayerCacheWebDownloadRangeKey];
+    BRRange range;
+    [rangeValue getValue:&range];
+    
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:20.0];
+    
+    if (range.length != NSNotFound && range.length != NSNotFound) {
+        NSString *rangeString = [NSString stringWithFormat:@"bytes=%lld-%lld", range.location, range.location + (range.length - 1)];
+        [request setValue:rangeString forHTTPHeaderField:@"Range"];
+        BRDebugLog(@"请求开始位置: %lld", (int64_t)range.location);
+        BRDebugLog(@"请求长度: %lld", (int64_t)range.length);
+        BRDebugLog(@"请求范围: %@", rangeString);
+    }
+    
+    BRDebugLog(@"请求内容: %@", self.requests);
+    
+    NSURLSessionConfiguration * configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
+    NSURLSession *sharedSession = [NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:nil];
+    self.dataTask = [sharedSession dataTaskWithRequest:request];
+    
     [self.dataTask resume];
 }
 
@@ -307,20 +336,40 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
     [self.dataTask cancel];
 }
 
-- (void)commonInitWithURL:(NSURL *)URL {
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:20.0];
-    if (self.range.length != NSNotFound && self.range.length != NSNotFound) {
-        NSString *rangeString = [NSString stringWithFormat:@"bytes=%lld-%lld", (int64_t)self.range.location, (int64_t)self.range.location + (int64_t)(_range.length - 1)];
-        [request setValue:rangeString forHTTPHeaderField:@"Range"];
-        BRDebugLog(@"请求开始位置: %lld", (int64_t)self.range.location);
-        BRDebugLog(@"请求长度: %lld", (int64_t)_range.length);
-        BRDebugLog(@"请求范围: %@", rangeString);
-    }
-    NSURLSessionConfiguration * configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSURLSession *sharedSession = [NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:nil];
-    self.dataTask = [sharedSession dataTaskWithRequest:request];
+- (void)commonInitRequestWithURL:(NSURL *)URL {
     
-    self.data = [NSMutableData data];
+    if (!URL) {
+        BRErrorLog(@"URL is nil, ignore URL request");
+        return;
+    }
+    
+    int64_t localFileAvailableLength = self.localFile.availableLength;
+    int64_t start = self.range.location;
+    int64_t end = self.range.location + self.range.length;
+    
+    BRRange range = BRMakeRange(0, 0);
+    while (start < end) {
+        
+        //当新的下载开始位置在已下载的之前
+        if (localFileAvailableLength > start) {
+            range = BRMakeRange(start, localFileAvailableLength - start);
+            start = localFileAvailableLength;
+        }
+        else {
+            range = BRMakeRange(start, end - start);
+            start = end;
+        }
+        
+        [self.requests addObject:@{
+                                   kBRPlayerCacheWebDownloadURLKey: URL,
+                                   kBRPlayerCacheWebDownloadRangeKey: [NSValue value:&range withObjCType:@encode(BRRange)]
+                                   
+                                   }];
+    }
+}
+
+- (void)commonInitWithURL:(NSURL *)URL {
+    [self commonInitRequestWithURL:URL];
 }
 
 - (NSString *)headerFieldWithKey:(NSString *)key allHeaderFields:(NSDictionary<NSString *, NSString *> *)headerFields {
@@ -368,6 +417,7 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
     didReceiveData:(NSData *)data {
     
     [self.localFile appendData:data offset:self.range.location];
+    self.availableLength += data.length;
     
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didReceiveData:)]) {
@@ -377,18 +427,65 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 }
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error {
-    [self.localFile closeFileIfComplete];
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.delegagte && [self.delegagte respondsToSelector:@selector(download:didCompleteWithError:)]) {
             [self.delegagte download:self didCompleteWithError:error];
         }
+        
+        if (error) {
+            BRErrorLog(@"请求出错:%@", error);
+            return;
+        }
+        
+        [self.localFile closeFileIfComplete];
+        [self resumeNextRequestIfComplete];
     });
+}
+
+#pragma mark - private
+
+- (void)resumeNextRequestIfComplete {
+    NSDictionary<NSString *, NSObject *> *reqeust = self.requests.firstObject;
+    NSValue *rangeValue = (NSValue *)reqeust[kBRPlayerCacheWebDownloadRangeKey];
+    BRRange range;
+    [rangeValue getValue:&range];
+    if (self.availableLength >= range.length) {
+        self.availableLength = 0;
+        
+        NSInteger requestsCount = self.requests.count;
+        if (requestsCount > 0) {
+            [self.requests removeObjectAtIndex:0];
+            requestsCount--;
+            if (requestsCount == 0) {
+                if (self.loadingRequests.count > 0) {
+                    [self.loadingRequests removeObjectAtIndex:0];
+                }
+                return;
+            }
+        }
+        
+        [self start];
+    }
 }
 
 #pragma mark - getter
 
 - (NSArray<NSString *> *)allHeaderKeys {
     return @[@"Content-Range"];
+}
+
+- (NSMutableArray<AVAssetResourceLoadingRequest *> *)loadingRequests {
+    if (!_loadingRequests) {
+        _loadingRequests = @[].mutableCopy;
+    }
+    return _loadingRequests;
+}
+
+- (NSMutableArray<NSDictionary<NSString *, NSObject *> *> *)requests {
+    if (!_requests) {
+        _requests = @[].mutableCopy;
+    }
+    return _requests;
 }
 
 @end
@@ -420,14 +517,14 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
     self.identify = [request.request.URL.absoluteString md5String];
 }
 
-- (void)reloadWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
+- (void)addResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
     [self.webDownload cancel];
-    [self.webDownload reloadWithResourceLoadingRequest:request];
+    [self.webDownload addResourceLoadingRequest:request];
     [self.webDownload start];
 }
 
 - (void)fullfillContentInfo {
-    AVAssetResourceLoadingContentInformationRequest *contentInformationRequest = self.webDownload.assetResourceLoadingRequest.contentInformationRequest;
+    AVAssetResourceLoadingContentInformationRequest *contentInformationRequest = self.webDownload.loadingRequest.contentInformationRequest;
     if (self.contentType && !contentInformationRequest.contentType) {
         
         CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(self.contentType), NULL);
@@ -476,18 +573,19 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 
 - (void)download:(BRPlayerCacheWebDownload *)download didReceiveData:(NSData *)data {
     BRDebugLog(@"接受到数据长度: %ld", data.length);
-    [download.assetResourceLoadingRequest.dataRequest respondWithData:data];
+    BRDebugLog(@"接受到数据长度: %@", download.loadingRequest.dataRequest);
+    [download.loadingRequest.dataRequest respondWithData:data];
     
     self.availableLength += data.length;
 }
 
 - (void)download:(BRPlayerCacheWebDownload *)download didCompleteWithError:(NSError *)error {
-    BRDebugLog(@"下载完成，一共下载长度: %ld", download.data.length);
-    [download.assetResourceLoadingRequest finishLoading];
+    BRDebugLog(@"下载完成，一共下载长度: %ld, 文件下载完成: %@", download.availableLength, self.dowloadComplete ? @"是" : @"否");
     
     self.dowloadComplete = (self.availableLength >= self.totalLength);
-    BRDebugLog(@"总文件下载量: %lld", self.availableLength);
-    BRDebugLog(@"文件下载完成: %@", self.dowloadComplete ? @"是" : @"否");
+    if (download.availableLength >= download.range.length) {
+        [download.loadingRequest finishLoading];
+    }
 }
 
 @end
@@ -538,7 +636,7 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
         }
         else {
             BRDebugLog(@"接着下载文件");
-            [self.mediaFile reloadWithResourceLoadingRequest:loadingRequest];
+            [self.mediaFile addResourceLoadingRequest:loadingRequest];
         }
     }
     

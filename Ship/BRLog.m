@@ -59,7 +59,7 @@ static BRLogLevel _logLevel;
             BRLogThreadName = [BRLogThreadName componentsSeparatedByString:@","].firstObject;
             BRLogThreadName = [BRLogThreadName stringByReplacingOccurrencesOfString:@"{number = " withString:@""];
             // message = [NSString stringWithFormat:@"[%@] [Thread: %@] %@ => [%@ + %ld]", flag, threadName, message, tempString, line];
-            BRLogMessage = [NSString stringWithFormat:@"[%@] [Thread: %02ld] [%@]", flag, (long)[BRLogThreadName integerValue], BRLogMessage];
+            BRLogMessage = [NSString stringWithFormat:@"[%@] [BRPlayer] %s [%@]", flag, function, BRLogMessage];
             NSLog(@"%@", BRLogMessage);
         }
     });
