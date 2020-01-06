@@ -12,21 +12,11 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 
 #import "BRLog.h"
+#import "BRLargeFileDownload.h"
 
 static NSString *BRVideoPlayerURLScheme = @"com.long.xlL.BRKit";
 static NSString *BRVideoPlayerURL = @"www.long.com";
 
-typedef struct _BRRange {
-    int64_t location;
-    int64_t length;
-} BRRange;
-
-NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
-    BRRange r;
-    r.location = loc;
-    r.length = len;
-    return r;
-}
 
 @interface NSData (BRPlayerCache)
 
@@ -492,39 +482,24 @@ static NSString *kBRPlayerCacheWebDownloadRangeKey = @"kBRPlayerCacheWebDownload
 
 #pragma mark - BRPlayerCacheVideo
 
-@interface BRPlayerCacheMediaFile: BRPlayerCacheFile<BRPlayerViewDownloadDelegate>
+@interface BRPlayerCacheMediaFile: BRPlayerCacheFile<BRLargeFileDownloadDelegate>
 
-@property (nonatomic, strong) BRPlayerCacheWebDownload *webDownload;
+@property (nonatomic, strong) BRLargeFileDownload *fileDownload;
 
 @end
 
 @implementation BRPlayerCacheMediaFile
 
-- (instancetype)initWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request
-{
-    self = [super init];
-    if (self) {
-        [self commonInitWithResourceLoadingRequest:request];
-    }
-    return self;
-}
-
-- (void)commonInitWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
-    self.webDownload = [[BRPlayerCacheWebDownload alloc] initWithResourceLoadingRequest:request];
-    self.webDownload.delegagte = self;
-    [self.webDownload start];
+- (void)addResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
+    self.fileDownload = [[BRLargeFileDownload alloc] initWithResourceLoadingRequest:request];
+    self.fileDownload.delegate = self;
+    [self.fileDownload start];
     
     self.identify = [request.request.URL.absoluteString md5String];
 }
 
-- (void)addResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request {
-    [self.webDownload cancel];
-    [self.webDownload addResourceLoadingRequest:request];
-    [self.webDownload start];
-}
-
-- (void)fullfillContentInfo {
-    AVAssetResourceLoadingContentInformationRequest *contentInformationRequest = self.webDownload.loadingRequest.contentInformationRequest;
+- (void)fillContentInformationRequest {
+    AVAssetResourceLoadingContentInformationRequest *contentInformationRequest = self.fileDownload.loadingRequest.contentInformationRequest;
     if (self.contentType && !contentInformationRequest.contentType) {
         
         CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(self.contentType), NULL);
@@ -568,7 +543,7 @@ static NSString *kBRPlayerCacheWebDownloadRangeKey = @"kBRPlayerCacheWebDownload
     self.totalLength = totalLength;
     self.contentType = type;
     
-    [self fullfillContentInfo];
+    [self fillContentInformationRequest];
 }
 
 - (void)download:(BRPlayerCacheWebDownload *)download didReceiveData:(NSData *)data {
@@ -629,7 +604,8 @@ static NSString *kBRPlayerCacheWebDownloadRangeKey = @"kBRPlayerCacheWebDownload
         if (!self.mediaFile || isNewFileURL) {
             BRDebugLog(@"新下载文件");
             
-            BRPlayerCacheMediaFile *mediaFile = [[BRPlayerCacheMediaFile alloc] initWithResourceLoadingRequest:loadingRequest];
+            BRPlayerCacheMediaFile *mediaFile = BRPlayerCacheMediaFile.new;
+            [mediaFile addResourceLoadingRequest:loadingRequest];
             [self.mediaFiles addObject:mediaFile];
             
             self.mediaFile = mediaFile;

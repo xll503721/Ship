@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		5A0FC0E923716ADB00E9FBA4 /* TableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */; };
 		5A36D15D236ECFE600776A7A /* BRExportCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A36D15C236ECFE600776A7A /* BRExportCommand.m */; };
+		5A4425BA23C2D306008C26D6 /* BRLargeFileDownload.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A4425B923C2D306008C26D6 /* BRLargeFileDownload.m */; };
+		5A4425BE23C2D4F2008C26D6 /* BRFileHandleCache.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A4425BD23C2D4F2008C26D6 /* BRFileHandleCache.m */; };
 		5A7C49E72366C09A001D8B2C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49E62366C09A001D8B2C /* AppDelegate.m */; };
 		5A7C49ED2366C09A001D8B2C /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5A7C49EC2366C09A001D8B2C /* ViewController.m */; };
 		5A7C49F02366C09A001D8B2C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5A7C49EE2366C09A001D8B2C /* Main.storyboard */; };
@@ -55,6 +57,10 @@
 		5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TableViewCell.m; sourceTree = "<group>"; };
 		5A36D15B236ECFE600776A7A /* BRExportCommand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BRExportCommand.h; sourceTree = "<group>"; };
 		5A36D15C236ECFE600776A7A /* BRExportCommand.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BRExportCommand.m; sourceTree = "<group>"; };
+		5A4425B823C2D306008C26D6 /* BRLargeFileDownload.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BRLargeFileDownload.h; sourceTree = "<group>"; };
+		5A4425B923C2D306008C26D6 /* BRLargeFileDownload.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BRLargeFileDownload.m; sourceTree = "<group>"; };
+		5A4425BC23C2D4F2008C26D6 /* BRFileHandleCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BRFileHandleCache.h; sourceTree = "<group>"; };
+		5A4425BD23C2D4F2008C26D6 /* BRFileHandleCache.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BRFileHandleCache.m; sourceTree = "<group>"; };
 		5A7C49E22366C09A001D8B2C /* Ship.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ship.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A7C49E52366C09A001D8B2C /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5A7C49E62366C09A001D8B2C /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -127,6 +133,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5A4425BB23C2D33E008C26D6 /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				5ACD607B239E161D00D12A95 /* BRPlayerCache.h */,
+				5ACD607C239E161D00D12A95 /* BRPlayerCache.m */,
+				5A4425B823C2D306008C26D6 /* BRLargeFileDownload.h */,
+				5A4425B923C2D306008C26D6 /* BRLargeFileDownload.m */,
+				5A4425BC23C2D4F2008C26D6 /* BRFileHandleCache.h */,
+				5A4425BD23C2D4F2008C26D6 /* BRFileHandleCache.m */,
+			);
+			path = Cache;
+			sourceTree = "<group>";
+		};
 		5A7C49D92366C09A001D8B2C = {
 			isa = PBXGroup;
 			children = (
@@ -150,6 +169,7 @@
 		5A7C49E42366C09A001D8B2C /* Ship */ = {
 			isa = PBXGroup;
 			children = (
+				5A4425BB23C2D33E008C26D6 /* Cache */,
 				5AAC6D4C236E724700A20B43 /* APLCompositionDebugView.h */,
 				5AAC6D4B236E724700A20B43 /* APLCompositionDebugView.m */,
 				5AAC6D41236E5F2D00A20B43 /* Resource */,
@@ -176,8 +196,6 @@
 				5AEB47FF2373B4B300B26CD1 /* BRPlayerView.m */,
 				5A0FC0E723716ADB00E9FBA4 /* TableViewCell.h */,
 				5A0FC0E823716ADB00E9FBA4 /* TableViewCell.m */,
-				5ACD607B239E161D00D12A95 /* BRPlayerCache.h */,
-				5ACD607C239E161D00D12A95 /* BRPlayerCache.m */,
 				5ACD607E239E22F500D12A95 /* BRLog.h */,
 				5ACD607F239E22F500D12A95 /* BRLog.m */,
 			);
@@ -363,6 +381,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A7C4A282366C968001D8B2C /* BRShip.m in Sources */,
+				5A4425BA23C2D306008C26D6 /* BRLargeFileDownload.m in Sources */,
 				5A7C4A1F2366C378001D8B2C /* xlLReceiver.m in Sources */,
 				5A7C4A3223682155001D8B2C /* BRImageCommand.m in Sources */,
 				5AAC6D4D236E724700A20B43 /* APLCompositionDebugView.m in Sources */,
@@ -374,6 +393,7 @@
 				5A8752DD23699C8F00091902 /* BRTransitionCommand.m in Sources */,
 				5A8752DA23699B0600091902 /* BRWaterMarkCommand.m in Sources */,
 				5A36D15D236ECFE600776A7A /* BRExportCommand.m in Sources */,
+				5A4425BE23C2D4F2008C26D6 /* BRFileHandleCache.m in Sources */,
 				5ACD6080239E22F500D12A95 /* BRLog.m in Sources */,
 				5A7C4A2F2366D814001D8B2C /* BRCommand.m in Sources */,
 				5ACD607D239E161D00D12A95 /* BRPlayerCache.m in Sources */,
