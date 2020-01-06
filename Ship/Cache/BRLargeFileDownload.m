@@ -7,7 +7,6 @@
 //
 
 #import "BRLargeFileDownload.h"
-#import "BRFileHandleCache.h"
 
 static NSString *kBRLargeFileDownloadURLKey = @"kBRLargeFileDownloadURLKey";
 static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
@@ -57,8 +56,6 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
 
 @implementation BRLargeFileRequest
 
-
-
 @end
 
 
@@ -68,10 +65,6 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
 
 @property (nonatomic, strong) NSURLSessionDataTask *dataTask;
 @property (nonatomic, strong) NSArray<NSString *> *allHeaderKeys;
-
-
-@property (nonatomic, assign) BRRange range;
-@property (nonatomic, assign) int64_t availableLength;
 
 @property (nonatomic, strong) NSMutableData *data;
 

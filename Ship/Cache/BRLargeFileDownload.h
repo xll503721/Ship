@@ -9,6 +9,8 @@
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 
+#import "BRFileHandleCache.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @class BRLargeFileDownload;
@@ -39,6 +41,9 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 
 @property (nonatomic, weak) id<BRLargeFileDownloadDelegate> delegate;
 @property (nonatomic, strong) AVAssetResourceLoadingRequest *loadingRequest;
+
+@property (nonatomic, assign) BRRange range;
+@property (nonatomic, assign) int64_t availableLength;
 
 - (instancetype)initWithURL:(NSURL *)URL;
 - (instancetype)initWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request;

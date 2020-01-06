@@ -12,12 +12,6 @@
 static NSString *kBRFileHandleCachePath = @"BRShip";
 static NSString *kBRFileHandleCacheMetadataExtension = @".data";
 
-@interface NSData (BRFileHandleCache)
-
-- (NSString *)md5String;
-
-@end
-
 @implementation NSData (BRFileHandleCache)
 
 - (NSString *)md5String {
@@ -31,12 +25,6 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
             result[12], result[13], result[14], result[15]
             ];
 }
-
-@end
-
-@interface NSString (BRFileHandleCache)
-
-- (NSString *)md5String;
 
 @end
 
@@ -83,6 +71,39 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
     return [BRFileHandleCache cacheWithURL:URL directoryNameUnderCaches:kBRFileHandleCachePath];
 }
 
++ (NSString *)cachePath {
+    NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+    NSString *fullPath = [cachesPath stringByAppendingPathComponent:kBRFileHandleCachePath];
+    return fullPath;
+}
+
++ (BOOL)createDirectoryWithPath:(NSString *)path {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    BOOL succeed = YES;
+    BOOL existed = [fileManager fileExistsAtPath:path];
+    if (!existed) {
+        NSError *error;
+        if (![fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error]) {
+            succeed = NO;
+            NSLog(@"creat Directory Failed:%@",[error localizedDescription]);
+        }
+    }
+    return succeed;
+}
+
++ (NSString *)fileNameWithURL:(NSURL *)URL {
+    return [NSString stringWithFormat:@"%@%@", [URL.absoluteString md5String], kBRFileHandleCacheMetadataExtension];
+}
+
+- (instancetype)initWithURL:(NSURL *)URL
+{
+    self = [super init];
+    if (self) {
+        [self commonInit];
+    }
+    return self;
+}
+
 - (void)encodeWithCoder:(NSCoder *)coder
 {
     [coder encodeObject:self.contentType forKey:NSStringFromSelector(@selector(contentType))];
@@ -110,33 +131,16 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
         if ([coder containsValueForKey:NSStringFromSelector(@selector(contentType))]) {
             self.availableLength = [coder decodeInt64ForKey:NSStringFromSelector(@selector(availableLength))];
         }
+        
+        [self commonInit];
     }
     return self;
 }
 
-+ (NSString *)cachePath {
-    NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-    NSString *fullPath = [cachesPath stringByAppendingPathComponent:kBRFileHandleCachePath];
-    return fullPath;
+- (void)commonInit {
+    
 }
 
-+ (BOOL)createDirectoryWithPath:(NSString *)path {
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    BOOL succeed = YES;
-    BOOL existed = [fileManager fileExistsAtPath:path];
-    if (!existed) {
-        NSError *error;
-        if (![fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error]) {
-            succeed = NO;
-            NSLog(@"creat Directory Failed:%@",[error localizedDescription]);
-        }
-    }
-    return succeed;
-}
-
-+ (NSString *)fileNameWithURL:(NSURL *)URL {
-    return [NSString stringWithFormat:@"%@%@", [URL.absoluteString md5String], kBRFileHandleCacheMetadataExtension];
-}
 
 #pragma mark - public
 

@@ -10,6 +10,18 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@interface NSData (BRFileHandleCache)
+
+- (NSString *)md5String;
+
+@end
+
+@interface NSString (BRFileHandleCache)
+
+- (NSString *)md5String;
+
+@end
+
 @interface BRFileHandleCache : NSObject <NSCoding>
 
 @property (nonatomic, assign) int64_t totalLength;
