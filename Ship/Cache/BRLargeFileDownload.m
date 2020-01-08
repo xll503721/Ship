@@ -138,7 +138,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
         });
     }
     
-    NSData *data = [self.cacheFile readDataWithLength:range.length];
+    NSData *data = [self.cacheFile readDataWithLength:range.length offset:range.location];
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.delegate && [self.delegate respondsToSelector:@selector(download:didReceiveData:)]) {
             [self.delegate download:self didReceiveData:data];
