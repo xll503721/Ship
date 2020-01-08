@@ -119,7 +119,7 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
 {
     [coder encodeObject:self.contentType forKey:NSStringFromSelector(@selector(contentType))];
     [coder encodeObject:self.URL forKey:NSStringFromSelector(@selector(URL))];
-    [coder encodeInt64:self.totalLength forKey:NSStringFromSelector(@selector(totalLength))];
+    [coder encodeInt64:self.fileLength forKey:NSStringFromSelector(@selector(fileLength))];
     [coder encodeInt64:self.availableLength forKey:NSStringFromSelector(@selector(availableLength))];
 }
 
@@ -136,7 +136,7 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
         }
         
         if ([coder containsValueForKey:NSStringFromSelector(@selector(contentType))]) {
-            self.totalLength = [coder decodeInt64ForKey:NSStringFromSelector(@selector(totalLength))];
+            self.fileLength = [coder decodeInt64ForKey:NSStringFromSelector(@selector(fileLength))];
         }
         
         if ([coder containsValueForKey:NSStringFromSelector(@selector(contentType))]) {
@@ -175,7 +175,7 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
 
 - (void)appendData:(NSData *)data offset:(int64_t)offset {
     
-    if ([self completed] || offset <= self.availableLength) {
+    if ([self completed]) {
         return;
     }
     
@@ -204,18 +204,20 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
 }
 
 - (BOOL)completed {
-    return self.availableLength >=  self.totalLength;
+    return (self.availableLength >= self.fileLength) && (self.fileLength != 0);
 }
 
 - (int64_t)availableLength {
-    return self.readFileHandle.availableData.length;
+    int64_t offset = self.readFileHandle.offsetInFile;
+    [self.readFileHandle seekToEndOfFile];
+    
+    int64_t availableLength = self.readFileHandle.offsetInFile;
+    [self.readFileHandle seekToFileOffset:offset];
+    
+    return availableLength;
 }
 
 - (void)closeIfCompleted {
-    if (![self completed]) {
-        return;
-    }
-    
     [self.readFileHandle closeFile];
     [self.writeFileHandle closeFile];
 }

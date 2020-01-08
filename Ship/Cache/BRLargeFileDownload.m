@@ -106,10 +106,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
     self.cacheFile = [BRFileHandleCache cacheWithURL:URL];
 }
 
-#pragma mark - public
-
-- (void)start {
-    
+- (void)startWebTask {
     BRLargeFileRequest *reqeust = self.largeFileRequests.firstObject;
     NSURL *URL = reqeust.URL;
     BRRange range = reqeust.range;
@@ -129,6 +126,36 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
     self.dataTask = [sharedSession dataTaskWithRequest:request];
     
     [self.dataTask resume];
+}
+
+- (void)startLocalTask {
+    BRLargeFileRequest *reqeust = self.largeFileRequests.firstObject;
+    BRRange range = reqeust.range;
+    
+    if (range.location == 0 && range.length == 2) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate download:self didReceiveResponse:NSHTTPURLResponse.new contentLength:range.length totalLength:self.cacheFile.fileLength contentType:self.cacheFile.contentType contentRange:range];
+        });
+    }
+    
+    NSData *data = [self.cacheFile readDataWithLength:range.length offset:range.location];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (self.delegate && [self.delegate respondsToSelector:@selector(download:didReceiveData:)]) {
+            [self.delegate download:self didReceiveData:data];
+        }
+    });
+}
+
+#pragma mark - public
+
+- (void)start {
+    BOOL completed = self.cacheFile.completed;
+    if (completed) {
+        [self startLocalTask];
+    }
+    else {
+        [self startWebTask];
+    }
 }
 
 #pragma mark - NSURLSession delegate
@@ -151,7 +178,8 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
         NSString *contentType = [httpResponse br_contentType];
         BRRange range = [httpResponse br_range];
         
-        self.cacheFile.totalLength = fileLength;
+        self.cacheFile.fileLength = fileLength;
+        self.cacheFile.contentType = contentType;
         
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.delegate download:self didReceiveResponse:httpResponse contentLength:contentLength totalLength:fileLength  contentType:contentType contentRange:range];
@@ -164,7 +192,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data {
     
-    [self.cacheFile appendData:data offset:self.range.location];
+    [self.cacheFile appendData:data];
     _availableLength += data.length;
     
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -185,8 +213,8 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
             return;
         }
         
-        [self.cacheFile closeIfCompleted];
         [self.cacheFile saveToKeyedUnarchiver];
+        [self.cacheFile closeIfCompleted];
         [self resumeNextRequestIfComplete];
     });
 }
@@ -251,7 +279,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
     int64_t length = loadingRequest.dataRequest.requestedLength;
 
     if ([loadingRequest.dataRequest respondsToSelector:@selector(requestsAllDataToEndOfResource)] && loadingRequest.dataRequest.requestsAllDataToEndOfResource) {
-        length = self.cacheFile.totalLength - location;
+        length = self.cacheFile.fileLength - location;
     }
     
     if(loadingRequest.dataRequest.currentOffset > 0){

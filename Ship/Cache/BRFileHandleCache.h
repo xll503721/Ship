@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface BRFileHandleCache : NSObject <NSCoding>
 
-@property (nonatomic, assign) int64_t totalLength;
+@property (nonatomic, assign) int64_t fileLength;
 @property (nonatomic, assign) int64_t availableLength;
 @property (nonatomic, strong) NSString *contentType;
 
