@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Check that the document is complete
 - (BOOL)completed;
-- (void)closeIfCompleted;
+- (void)close;
 
 - (void)clearCache;
 

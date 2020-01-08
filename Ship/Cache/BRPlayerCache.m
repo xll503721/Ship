@@ -137,10 +137,7 @@ static NSString *BRVideoPlayerURL = @"www.long.com";
 - (void)download:(BRLargeFileDownload *)download didCompleteWithError:(NSError *)error {
     BRDebugLog(@"下载完成，一共下载长度: %ld, 文件下载完成: %@", download.availableLength, self.dowloadComplete ? @"是" : @"否");
     
-    self.dowloadComplete = (self.availableLength >= self.totalLength);
-    if (download.availableLength >= download.range.length) {
-        [download.loadingRequest finishLoading];
-    }
+    [download.loadingRequest finishLoading];
 }
 
 @end

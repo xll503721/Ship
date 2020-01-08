@@ -138,11 +138,20 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
         });
     }
     
-    NSData *data = [self.cacheFile readDataWithLength:range.length offset:range.location];
+    NSData *data = [self.cacheFile readDataWithLength:range.length];
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.delegate && [self.delegate respondsToSelector:@selector(download:didReceiveData:)]) {
             [self.delegate download:self didReceiveData:data];
         }
+    });
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSError *error;
+        if (self.delegate && [self.delegate respondsToSelector:@selector(download:didCompleteWithError:)]) {
+            [self.delegate download:self didCompleteWithError:error];
+        }
+        [self.cacheFile close];
+        [self resumeNextRequestIfComplete];
     });
 }
 
@@ -214,7 +223,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
         }
         
         [self.cacheFile saveToKeyedUnarchiver];
-        [self.cacheFile closeIfCompleted];
+        [self.cacheFile close];
         [self resumeNextRequestIfComplete];
     });
 }
@@ -260,7 +269,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
     while (start < end) {
         
         //当新的下载开始位置在已下载的之前
-        if (localFileAvailableLength > start) {
+        if (localFileAvailableLength > start && !self.cacheFile.completed) {
             range = BRMakeRange(start, localFileAvailableLength - start);
             start = localFileAvailableLength;
         }

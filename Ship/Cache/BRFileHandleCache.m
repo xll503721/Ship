@@ -217,7 +217,7 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
     return availableLength;
 }
 
-- (void)closeIfCompleted {
+- (void)close {
     [self.readFileHandle closeFile];
     [self.writeFileHandle closeFile];
 }
