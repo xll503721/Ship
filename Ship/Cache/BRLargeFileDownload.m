@@ -70,7 +70,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
 
 @property (nonatomic, strong) NSMutableArray<AVAssetResourceLoadingRequest *> *loadingRequests;
 
-@property (nonatomic, strong) BRFileHandleCache *localFile;
+@property (nonatomic, strong) BRFileHandleCache *cacheFile;
 
 @property (nonatomic, strong) NSMutableArray<BRLargeFileRequest *> *largeFileRequests;
 
@@ -103,7 +103,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
 }
 
 - (void)commonInitWithURL:(NSURL *)URL {
-    self.localFile = [BRFileHandleCache cacheWithURL:URL];
+    self.cacheFile = [BRFileHandleCache cacheWithURL:URL];
 }
 
 #pragma mark - public
@@ -151,7 +151,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
         NSString *contentType = [httpResponse br_contentType];
         BRRange range = [httpResponse br_range];
         
-        self.localFile.totalLength = fileLength;
+        self.cacheFile.totalLength = fileLength;
         
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.delegate download:self didReceiveResponse:httpResponse contentLength:contentLength totalLength:fileLength  contentType:contentType contentRange:range];
@@ -164,8 +164,8 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data {
     
-    [self.localFile appendData:data offset:self.range.location];
-    self.availableLength += data.length;
+    [self.cacheFile appendData:data offset:self.range.location];
+    _availableLength += data.length;
     
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.delegate && [self.delegate respondsToSelector:@selector(download:didReceiveData:)]) {
@@ -185,8 +185,8 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
             return;
         }
         
-        [self.localFile closeFileIfComplete];
-        [self.localFile saveToKeyedUnarchiver];
+        [self.cacheFile closeIfCompleted];
+        [self.cacheFile saveToKeyedUnarchiver];
         [self resumeNextRequestIfComplete];
     });
 }
@@ -197,7 +197,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
     BRLargeFileRequest *reqeust = self.largeFileRequests.firstObject;
     BRRange range = reqeust.range;
     if (self.availableLength >= range.length) {
-        self.availableLength = 0;
+        _availableLength = 0;
         
         NSInteger requestsCount = self.largeFileRequests.count;
         if (requestsCount > 0) {
@@ -222,7 +222,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
         return;
     }
     
-    int64_t localFileAvailableLength = self.localFile.availableLength;
+    int64_t localFileAvailableLength = self.cacheFile.availableLength;
     int64_t start = self.range.location;
     int64_t end = self.range.location + self.range.length;
     
@@ -251,15 +251,15 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
     int64_t length = loadingRequest.dataRequest.requestedLength;
 
     if ([loadingRequest.dataRequest respondsToSelector:@selector(requestsAllDataToEndOfResource)] && loadingRequest.dataRequest.requestsAllDataToEndOfResource) {
-        length = self.localFile.totalLength - location;
+        length = self.cacheFile.totalLength - location;
     }
     
     if(loadingRequest.dataRequest.currentOffset > 0){
         location = loadingRequest.dataRequest.currentOffset;
     }
     
-    self.range = BRMakeRange(location, length);
-    self.loadingRequest = loadingRequest;
+    _range = BRMakeRange(location, length);
+    _loadingRequest = loadingRequest;
 }
 
 #pragma mark - getter

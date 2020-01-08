@@ -130,9 +130,8 @@ static NSString *BRVideoPlayerURL = @"www.long.com";
 - (void)download:(BRLargeFileDownload *)download didReceiveData:(NSData *)data {
     BRDebugLog(@"接受到数据长度: %ld", data.length);
     BRDebugLog(@"接受到数据长度: %@", download.loadingRequest.dataRequest);
-    [download.loadingRequest.dataRequest respondWithData:data];
     
-    self.availableLength += data.length;
+    [download.loadingRequest.dataRequest respondWithData:data];
 }
 
 - (void)download:(BRLargeFileDownload *)download didCompleteWithError:(NSError *)error {

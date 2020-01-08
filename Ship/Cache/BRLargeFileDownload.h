@@ -40,10 +40,13 @@ NS_INLINE BRRange BRMakeRange(int64_t loc, int64_t len) {
 @interface BRLargeFileDownload : NSObject
 
 @property (nonatomic, weak) id<BRLargeFileDownloadDelegate> delegate;
-@property (nonatomic, strong) AVAssetResourceLoadingRequest *loadingRequest;
 
-@property (nonatomic, assign) BRRange range;
-@property (nonatomic, assign) int64_t availableLength;
+/// The file to which the downloaded data is stored
+@property (nonatomic, strong, readonly) BRFileHandleCache *cacheFile;
+@property (nonatomic, strong, readonly) AVAssetResourceLoadingRequest *loadingRequest;
+
+@property (nonatomic, assign, readonly) BRRange range;
+@property (nonatomic, assign, readonly) int64_t availableLength;
 
 - (instancetype)initWithURL:(NSURL *)URL;
 - (instancetype)initWithResourceLoadingRequest:(AVAssetResourceLoadingRequest *)request;

@@ -41,7 +41,9 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
 @property (nonatomic, strong) NSFileHandle *writeFileHandle;
 @property (nonatomic, strong) NSFileHandle *readFileHandle;
 
-@property (nonatomic, strong) NSString *contentType;
+@property (nonatomic, assign) int64_t readOffset;
+@property (nonatomic, assign) int64_t writeOffset;
+
 @property (nonatomic, strong) NSString *identify;
 @property (nonatomic, assign) BOOL dowloadComplete;
 @property (nonatomic, strong) NSURL *URL;
@@ -50,16 +52,19 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
 
 @implementation BRFileHandleCache
 
+#pragma mark - class method
+
 + (instancetype)cacheWithURL:(NSURL *)URL directoryNameUnderCaches:(NSString *)directoryName {
     
-    NSString *fullPath = [[BRFileHandleCache cachePath] stringByAppendingPathComponent:[BRFileHandleCache fileNameWithURL:URL]];
-    id cache = [NSKeyedUnarchiver unarchiveObjectWithFile:fullPath];
+    //create directory
+    NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+    NSString *fullCachesPath = [cachesPath stringByAppendingPathComponent:kBRFileHandleCachePath];
+    [BRFileHandleCache createDirectoryWithPath:fullCachesPath];
+    
+    NSString *fullFilePath = [[BRFileHandleCache cacheWithRootDirectory:directoryName] stringByAppendingPathComponent:[BRFileHandleCache metadataFileNameWithURL:URL]];
+    id cache = [NSKeyedUnarchiver unarchiveObjectWithFile:fullFilePath];
     
     if (!cache) {
-        NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-        NSString *fullPath = [cachesPath stringByAppendingPathComponent:kBRFileHandleCachePath];
-        [BRFileHandleCache createDirectoryWithPath:fullPath];
-        
         BRFileHandleCache *cache = BRFileHandleCache.new;
         cache.URL = URL;
         return cache;
@@ -71,9 +76,9 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
     return [BRFileHandleCache cacheWithURL:URL directoryNameUnderCaches:kBRFileHandleCachePath];
 }
 
-+ (NSString *)cachePath {
++ (NSString *)cacheWithRootDirectory:(NSString *)directory {
     NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-    NSString *fullPath = [cachesPath stringByAppendingPathComponent:kBRFileHandleCachePath];
+    NSString *fullPath = [cachesPath stringByAppendingPathComponent:directory];
     return fullPath;
 }
 
@@ -85,15 +90,21 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
         NSError *error;
         if (![fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error]) {
             succeed = NO;
-            NSLog(@"creat Directory Failed:%@",[error localizedDescription]);
+            NSLog(@"create Directory Failed:%@",[error localizedDescription]);
         }
     }
     return succeed;
 }
 
-+ (NSString *)fileNameWithURL:(NSURL *)URL {
++ (NSString *)metadataFileNameWithURL:(NSURL *)URL {
     return [NSString stringWithFormat:@"%@%@", [URL.absoluteString md5String], kBRFileHandleCacheMetadataExtension];
 }
+
++ (NSString *)fileNameWithURL:(NSURL *)URL {
+    return [URL.absoluteString md5String];
+}
+
+#pragma mark - init method
 
 - (instancetype)initWithURL:(NSURL *)URL
 {
@@ -138,49 +149,89 @@ static NSString *kBRFileHandleCacheMetadataExtension = @".data";
 }
 
 - (void)commonInit {
+    NSString *path = [BRFileHandleCache cacheWithRootDirectory:kBRFileHandleCachePath];
+    NSString *fullPath = [path stringByAppendingPathComponent:[BRFileHandleCache fileNameWithURL:self.URL]];
     
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:fullPath]) {
+        [fileManager createFileAtPath:fullPath contents:nil attributes:nil];
+    }
+    
+    self.writeFileHandle = [NSFileHandle fileHandleForWritingAtPath:fullPath];
+    self.readFileHandle = [NSFileHandle fileHandleForReadingAtPath:fullPath];
 }
 
 
 #pragma mark - public
 
 - (BOOL)saveToKeyedUnarchiverWithPath:(NSString *)path {
-    BOOL succeed = [NSKeyedArchiver archiveRootObject:self toFile:[path stringByAppendingPathComponent:[BRFileHandleCache fileNameWithURL:self.URL]]];
+    BOOL succeed = [NSKeyedArchiver archiveRootObject:self toFile:[path stringByAppendingPathComponent:[BRFileHandleCache metadataFileNameWithURL:self.URL]]];
     return succeed;
 }
 
 - (BOOL)saveToKeyedUnarchiver {
-    return [self saveToKeyedUnarchiverWithPath:[BRFileHandleCache cachePath]];
+    return [self saveToKeyedUnarchiverWithPath:[BRFileHandleCache cacheWithRootDirectory:kBRFileHandleCachePath]];
 }
 
 - (void)appendData:(NSData *)data offset:(int64_t)offset {
     
-    int64_t availableLength = self.writeFileHandle.availableData.length;
-    if ([self checkComplete] || offset <= availableLength) {
+    if ([self completed] || offset <= self.availableLength) {
         return;
     }
     
     [self.writeFileHandle seekToFileOffset:offset];
     [self.writeFileHandle writeData:data];
     [self.writeFileHandle synchronizeFile];
-    
-    self.availableLength += data.length;
+
 }
 
 - (void)appendData:(NSData *)data {
     [self appendData:data offset:self.availableLength];
 }
 
-- (BOOL)checkComplete {
+- (NSData *)readDataWithLength:(int64_t)length offset:(int64_t)offset {
+    [self.readFileHandle seekToFileOffset:offset];
+    NSData *data = [self.readFileHandle readDataOfLength:length];
+    return data;
+}
+
+- (NSData *)readDataWithLength:(int64_t)length {
+    NSData *data = [self readDataWithLength:length offset:self.readOffset];
+    if (data.length > 0) {
+        self.readOffset += length;
+    }
+    return data;
+}
+
+- (BOOL)completed {
     return self.availableLength >=  self.totalLength;
 }
 
-- (void)closeFileIfComplete {
-    if (![self checkComplete]) {
+- (int64_t)availableLength {
+    return self.readFileHandle.availableData.length;
+}
+
+- (void)closeIfCompleted {
+    if (![self completed]) {
         return;
     }
     
+    [self.readFileHandle closeFile];
     [self.writeFileHandle closeFile];
+}
+
+- (void)clearCache {
+    NSString *path = [BRFileHandleCache cacheWithRootDirectory:kBRFileHandleCachePath];
+    NSString *fullFilePath = [path stringByAppendingPathComponent:[BRFileHandleCache fileNameWithURL:self.URL]];
+    NSString *fullMetadataPath = [path stringByAppendingPathComponent:[BRFileHandleCache metadataFileNameWithURL:self.URL]];
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSError *error;
+    [fileManager removeItemAtPath:fullFilePath error:&error];
+    [fileManager removeItemAtPath:fullMetadataPath error:&error];
+    if (!error) {
+        NSLog(@"");
+    }
 }
 
 @end

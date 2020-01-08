@@ -26,28 +26,34 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, assign) int64_t totalLength;
 @property (nonatomic, assign) int64_t availableLength;
+@property (nonatomic, strong) NSString *contentType;
 
-/// load BRFileHandleCache with URL, under Caches Directory
+/// Load BRFileHandleCache with URL, under the Caches directory
 /// @param URL req URL
 + (instancetype)cacheWithURL:(NSURL *)URL;
 
-/// custom directoryName under Caches Directory
+/// Custom directory name under Caches directory
 /// @param URL req URL
 /// @param directoryName under Caches Directory
 + (instancetype)cacheWithURL:(NSURL *)URL directoryNameUnderCaches:(NSString *)directoryName;
 
-/// archiving
+/// Archiving
 - (BOOL)saveToKeyedUnarchiver;
 
-
-/// append data to fileHandle, start with offset
+/// Append data to fileHandle, start with offset
 /// @param data new data
 /// @param offset start index
 - (void)appendData:(NSData *)data offset:(int64_t)offset;
 - (void)appendData:(NSData *)data;
 
-- (BOOL)checkComplete;
-- (void)closeFileIfComplete;
+- (NSData *)readDataWithLength:(int64_t)length offset:(int64_t)offset;
+- (NSData *)readDataWithLength:(int64_t)length;
+
+/// Check that the document is complete
+- (BOOL)completed;
+- (void)closeIfCompleted;
+
+- (void)clearCache;
 
 @end
 
