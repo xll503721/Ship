@@ -33,6 +33,8 @@ typedef NS_ENUM(NSUInteger, BRPlayerStatus)  {
 
 @protocol BRPlayerProtocol <NSObject>
 
+@optional
+
 /// set loop play, default value -1
 @property (nonatomic, assign) NSInteger loopPlayCount;
 
@@ -102,7 +104,7 @@ typedef NS_ENUM(NSUInteger, BRPlayerStatus)  {
 @property (nonatomic, weak) id<BRPlayerDelegate> delegate;
 @property (nonatomic, weak) id<BRPlayerCacheDataSource> dataSource;
 
-@property (nonatomic, strong) CALayer *layer;
+@property (nonatomic, strong, readonly) CALayer *playerLayer;
 
 /// when use this method, the View invoke BRPlayerProtocol method will forward to BRPlayer
 - (void)attachView:(UIView *)view;
@@ -129,8 +131,6 @@ typedef NS_ENUM(NSUInteger, BRScrollType) {
 @interface BRPlayerView : UIView <BRPlayerProtocol>
 
 @property (nonatomic, weak) id<BRPlayerViewDeleate> delegate;
-
-@property (nonatomic, strong) BRPlayer *player;
 
 /// set Overlap auto to hide
 @property (nonatomic, assign) BOOL isOverlapViewAutoHide;

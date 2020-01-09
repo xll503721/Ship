@@ -8,6 +8,7 @@
 
 #import "BRPlayerView.h"
 #import "BRLog.h"
+#import "BRPlayerCache.h"
 
 static CGFloat kXlLPlayerToobarViewHeight = 30;
 static const char kBRPlayerViewSelf;
@@ -17,8 +18,36 @@ static const char kBRPlayerViewScrollViewScrollInRect;
 static const char kBRPlayerViewScrollViewScrollHitType;
 
 static NSString *BRPlayerURLScheme = @"BRURLScheme";
+static NSString *const BRPlayerForwardInvocationSelectorName = @"__brplayer_forwardInvocation:";
 
 #pragma mark - BRPlayer
+
+static IMP brplayer_getMsgForwardIMP(NSObject *self, SEL selector) {
+    IMP msgForwardIMP = _objc_msgForward;
+#if !defined(__arm64__)
+    Method method = class_getInstanceMethod(self.class, selector);
+    const char *encoding = method_getTypeEncoding(method);
+    BOOL methodReturnsStructValue = encoding[0] == _C_STRUCT_B;
+    if (methodReturnsStructValue) {
+        @try {
+            NSUInteger valueSize = 0;
+            NSGetSizeAndAlignment(encoding, &valueSize, NULL);
+            
+            if (valueSize == 1 || valueSize == 2 || valueSize == 4 || valueSize == 8) {
+                methodReturnsStructValue = NO;
+            }
+        } @catch (__unused NSException *e) {}
+    }
+    if (methodReturnsStructValue) {
+        msgForwardIMP = (IMP)_objc_msgForward_stret;
+    }
+#endif
+    return msgForwardIMP;
+}
+
+static void __BRPLAYER_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL selector, NSInvocation *invocation) {
+    NSLog(@"selector is: %@", NSStringFromSelector(invocation.selector));
+}
 
 typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context);
 
@@ -34,9 +63,9 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 @property (nonatomic, strong) id<AVAssetResourceLoaderDelegate> cache;
 
 @property (nonatomic, assign) BOOL isPlaying;
-@property (nonatomic, assign) BOOL _autoPlayWhenReadyToPlay;
-@property (nonatomic, assign) BOOL _enablePlayWhileDownload;
-@property (nonatomic, assign) NSInteger _loopPlayCount;
+@property (nonatomic, assign, setter=autoPlayWhenReadyToPlay:, getter=autoPlayWhenReadyToPlay) BOOL _autoPlayWhenReadyToPlay;
+@property (nonatomic, assign, setter=enablePlayWhileDownload:, getter=enablePlayWhileDownload) BOOL _enablePlayWhileDownload;
+@property (nonatomic, assign, setter=loopPlayCount:, getter=loopPlayCount) NSInteger _loopPlayCount;
 
 /// playing URL
 @property (nonatomic, strong) NSURL *URL;
@@ -50,7 +79,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 
 - (void)dealloc
 {
-    [self removeObserver];
+    [self br_removeObserver];
 }
 
 - (instancetype)initWithURL:(NSURL *)URL
@@ -61,7 +90,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         self.URL = URL;
         self.playerItem = [AVPlayerItem playerItemWithURL:URL];
         
-        [self commonInit];
+        [self br_commonInit];
     }
     return self;
 }
@@ -74,7 +103,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         self.asset = asset;
         self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
         
-        [self commonInit];
+        [self br_commonInit];
     }
     return self;
 }
@@ -89,12 +118,12 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         self.playerItem.videoComposition = videoComposition;
         self.playerItem.audioMix = audioMix;
         
-        [self commonInit];
+        [self br_commonInit];
     }
     return self;
 }
 
-- (void)commonInit {
+- (void)br_commonInit {
     
     __weak typeof(self) wself = self;
     self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
@@ -107,26 +136,25 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         
     }];
     self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
-    self.layer = self.playerLayer;
     
     self._autoPlayWhenReadyToPlay = YES;
     self._loopPlayCount = -1;
     
-    [self addObserver];
+    [self br_addObserver];
 }
 
-- (void)addObserver {
+- (void)br_addObserver {
     [self.observeBlocks enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, ObserveBlock  _Nonnull obj, BOOL * _Nonnull stop) {
         [self.playerItem addObserver:self forKeyPath:key options:NSKeyValueObservingOptionNew context:nil];
     }];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onPlayerItemPlaybackStalled:) name:AVPlayerItemPlaybackStalledNotification object:self.playerItem];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppResignActive:) name:UIApplicationWillResignActiveNotification object:self.playerItem];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:self.playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(br_onPlayerItemDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(br_onPlayerItemPlaybackStalled:) name:AVPlayerItemPlaybackStalledNotification object:self.playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(br_onAppResignActive:) name:UIApplicationWillResignActiveNotification object:self.playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(br_onAppBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:self.playerItem];
 }
 
-- (void)removeObserver {
+- (void)br_removeObserver {
     [self.observeBlocks enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, ObserveBlock  _Nonnull obj, BOOL * _Nonnull stop) {
         [self.playerItem removeObserver:self forKeyPath:key];
     }];
@@ -135,7 +163,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 }
 
 
-- (void)reload {
+- (void)br_reload {
     __weak typeof(self) wself = self;
     [self.player replaceCurrentItemWithPlayerItem:self.playerItem];
     [self.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 5) queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
@@ -145,13 +173,13 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
             [wself.delegate player:wself playingWithProgress:progress currentTime:currentTime];
         }
     }];
-    [self removeObserver];
-    [self addObserver];
+    [self br_removeObserver];
+    [self br_addObserver];
 }
 
 #pragma mark - Observer
 
-- (void)onPlayerItemDidPlayToEndTime:(NSNotification *)notification {
+- (void)br_onPlayerItemDidPlayToEndTime:(NSNotification *)notification {
     AVPlayerItem *playerItem = notification.object;
     if (playerItem != self.playerItem) {
         return;
@@ -176,17 +204,17 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     }
 }
 
-- (void)onAppResignActive:(NSNotification *)notification {
+- (void)br_onAppResignActive:(NSNotification *)notification {
     [self pause];
 }
 
-- (void)onAppBecomeActive:(NSNotification *)notification {
+- (void)br_onAppBecomeActive:(NSNotification *)notification {
     if (self.isPlaying) {
         [self play];
     }
 }
 
-- (void)onPlayerItemPlaybackStalled:(NSNotification *)notification {
+- (void)br_onPlayerItemPlaybackStalled:(NSNotification *)notification {
     
 }
 
@@ -197,14 +225,14 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     }
 }
 
-- (void)reset {
+- (void)br_reset {
     
     //reset property
     self.loopPlayCount = -1;
     self.autoPlayWhenReadyToPlay = NO;
     
     //remove all observer
-    [self removeObserver];
+    [self br_removeObserver];
     
     //remove layer
     [self.playerLayer removeFromSuperlayer];
@@ -231,13 +259,40 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 }
 
 - (void)reloadWithURL:(NSURL *)URL {
-    [self reset];
+    [self br_reset];
 }
 
 - (void)attachView:(UIView *)view {
     if (![view conformsToProtocol:@protocol(BRPlayerProtocol)]) {
         BRDebugLog(@"can not attache class of %@ view, because that not conforms `BRPlayerProtocol`", view.class);
         return;
+    }
+    
+    static NSSet *disallowedSelectorList;
+    static dispatch_once_t pred;
+    dispatch_once(&pred, ^{
+        disallowedSelectorList = [NSSet setWithObjects:@"retain", @"release", @"autorelease", @"forwardInvocation:", @"delegate", @"dataSource", @"playerLayer", nil];
+    });
+    
+    unsigned int count;
+    Method *methods = class_copyMethodList([self class], &count);
+    for (int i = 0; i < count; i++) {
+        Method method = methods[i];
+        SEL selector = method_getName(method);
+        const char *typeEncoding = method_getTypeEncoding(method);
+        NSString *name =  NSStringFromSelector(selector);
+        
+        NSString *selectorName = NSStringFromSelector(selector);
+        if ([disallowedSelectorList containsObject:selectorName] || [name hasPrefix:@"br_"]) {
+            continue;
+        }
+        
+        class_replaceMethod(view.class, selector, brplayer_getMsgForwardIMP(self, selector), typeEncoding);
+    }
+    
+    IMP originalImplementation = class_replaceMethod(view.class, @selector(forwardInvocation:), (IMP)__BRPLAYER_ARE_BEING_CALLED__, "v@:@");
+    if (originalImplementation) {
+        class_addMethod(view.class, NSSelectorFromString(BRPlayerForwardInvocationSelectorName), originalImplementation, "v@:@");
     }
 }
 
@@ -270,7 +325,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (void)setEnablePlayWhileDownload:(BOOL)enablePlayWhileDownload {
     __enablePlayWhileDownload = enablePlayWhileDownload;
     if (!enablePlayWhileDownload) {
-        [self reset];
+        [self br_reset];
         
         if (self.asset) {
             self.playerItem = [AVPlayerItem playerItemWithAsset:self.asset];
@@ -280,7 +335,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
             self.playerItem = [AVPlayerItem playerItemWithURL:self.URL];
         }
         
-        [self commonInit];
+        [self br_commonInit];
         return;
     }
     
@@ -288,13 +343,13 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         @throw [NSException exceptionWithName:@"BRPlayerException" reason:@"dataSource required method not implement" userInfo:nil];
     }
     
-    [self reset];
+    [self br_reset];
     
     self.cache = [self.dataSource player:self];
     AVURLAsset *videoURLAsset = [AVURLAsset URLAssetWithURL:[self composeFakeVideoURL] options:nil];
     [videoURLAsset.resourceLoader setDelegate:self.cache queue:dispatch_get_main_queue()];
     self.playerItem = [AVPlayerItem playerItemWithAsset:videoURLAsset];
-    [self commonInit];
+    [self br_commonInit];
 }
 
 - (BOOL)enablePlayWhileDownload {
@@ -305,7 +360,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     if (![URL.path isEqualToString:_URL.path]) {
         _URL = URL;
         self.playerItem = [AVPlayerItem playerItemWithURL:_URL];
-        [self commonInit];
+        [self br_commonInit];
     }
 }
 
@@ -313,7 +368,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     if (_asset !=  asset) {
         _asset = asset;
         self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
-        [self reload];
+        [self br_reload];
     }
 }
 
@@ -326,21 +381,21 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (NSDictionary<NSString *, ObserveBlock> *)observeBlocks {
     if (!_observeBlocks) {
         _observeBlocks = @{
-            @"status": [self statusBlock],
-            @"loadedTimeRanges": [self loadedTimeRangesBlock],
-            @"playbackBufferEmpty": [self playbackBufferEmptyBlock],
-            @"playbackLikelyToKeepUp": [self playbackLikelyToKeepUpBlock],
+            @"status": [self br_statusBlock],
+            @"loadedTimeRanges": [self br_loadedTimeRangesBlock],
+            @"playbackBufferEmpty": [self br_playbackBufferEmptyBlock],
+            @"playbackLikelyToKeepUp": [self br_playbackLikelyToKeepUpBlock],
         };
     }
     return _observeBlocks;
 }
 
-- (ObserveBlock)statusBlock {
+- (ObserveBlock)br_statusBlock {
     return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
         AVPlayerItemStatus status = [change[NSKeyValueChangeNewKey] intValue];
         BRDebugLog(@"status is: %@", status == AVPlayerItemStatusReadyToPlay ? @"AVPlayerItemStatusReadyToPlay" : @"AVPlayerItemStatusFailed");
         if (self.delegate && [self.delegate respondsToSelector:@selector(player:statusDidChange:)] && self.status != (BRPlayerStatus)status) {
-            [self.delegate player:self statusDidChange:status];
+            [self.delegate player:self statusDidChange:(BRPlayerStatus)status];
         }
         
         if (status == AVPlayerItemStatusReadyToPlay) {
@@ -362,7 +417,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     };
 }
 
-- (ObserveBlock)loadedTimeRangesBlock {
+- (ObserveBlock)br_loadedTimeRangesBlock {
     return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
         CMTimeRange timeRange = [self.playerItem.loadedTimeRanges.firstObject CMTimeRangeValue];//本次缓冲时间范围
         Float64 startSeconds = CMTimeGetSeconds(timeRange.start);
@@ -377,7 +432,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     };
 }
 
-- (ObserveBlock)playbackBufferEmptyBlock {
+- (ObserveBlock)br_playbackBufferEmptyBlock {
     return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
         BOOL empty = [change[NSKeyValueChangeNewKey] intValue];
         if (!empty) {
@@ -388,7 +443,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     };
 }
 
-- (ObserveBlock)playbackLikelyToKeepUpBlock {
+- (ObserveBlock)br_playbackLikelyToKeepUpBlock {
     return ^ (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context){
         if (self.delegate && [self.delegate respondsToSelector:@selector(player:playingOrPauseStatusChange:)]) {
             [self.delegate player:self playingOrPauseStatusChange:YES];
@@ -400,6 +455,8 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         }
     };
 }
+
+@synthesize status;
 
 @end
 
@@ -515,7 +572,9 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 
 @end
 
-@interface BRPlayerView ()
+@interface BRPlayerView () <BRPlayerViewDeleate, BRPlayerCacheDataSource>
+
+@property (nonatomic, strong) BRPlayer *testPlayer;
 
 @end
 
@@ -524,8 +583,11 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (instancetype)initWithURL:(NSURL *)URL {
     self = [super init];
     if (self) {
-        _player = [[BRPlayer alloc] initWithURL:URL];
-        [self.layer addSublayer:_player.layer];
+        _testPlayer = [[BRPlayer alloc] initWithURL:URL];
+        _testPlayer.dataSource = self;
+        [self.layer addSublayer:_testPlayer.playerLayer];
+        _testPlayer.playerLayer.backgroundColor = [UIColor redColor].CGColor;
+        [_testPlayer attachView:self];
     }
     return self;
 }
@@ -533,11 +595,16 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (void)layoutSubviews {
     [super layoutSubviews];
     
-    self.player.layer.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
+    _testPlayer.playerLayer.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
+    
 }
 
 - (void)onPlayButton {
     [self play];
+}
+
+- (id<AVAssetResourceLoaderDelegate>)player:(BRPlayer *)player {
+    return BRPlayerCache.new;
 }
 
 #pragma mark - getter
