@@ -96,7 +96,7 @@
     self.playerView = [[BRPlayerView alloc] initWithURL:[NSURL URLWithString:@"http://www.w3school.com.cn/example/html5/mov_bbb.mp4"]];
     self.playerView.frame = CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height);
     self.playerView.enablePlayWhileDownload = YES;
-    self.playerView.loopPlayCount = 999;
+    self.playerView.loopPlayCount = 99999;
 //    self.playerView.enablePlayWhileDownload = YES;
     self.playerView.backgroundColor = [UIColor yellowColor];
 

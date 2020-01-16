@@ -16,6 +16,7 @@ static const char kBRPlayerViewCurrentPlaying;
 static const char kBRPlayerViewScrollViewDelegate;
 static const char kBRPlayerViewScrollViewScrollInRect;
 static const char kBRPlayerViewScrollViewScrollHitType;
+static const char kBRPlayerInner;
 
 static NSString *BRPlayerURLScheme = @"BRURLScheme";
 static NSString *const BRPlayerForwardInvocationSelectorName = @"__brplayer_forwardInvocation:";
@@ -47,6 +48,9 @@ static IMP brplayer_getMsgForwardIMP(NSObject *self, SEL selector) {
 
 static void __BRPLAYER_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL selector, NSInvocation *invocation) {
     NSLog(@"selector is: %@", NSStringFromSelector(invocation.selector));
+    
+    BRPlayer *player = (BRPlayer *)objc_getAssociatedObject(self, &kBRPlayerInner);
+    [player performSelector:selector];
 }
 
 typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyValueChangeKey,id> *change, void *context);
@@ -271,7 +275,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     static NSSet *disallowedSelectorList;
     static dispatch_once_t pred;
     dispatch_once(&pred, ^{
-        disallowedSelectorList = [NSSet setWithObjects:@"retain", @"release", @"autorelease", @"forwardInvocation:", @"delegate", @"dataSource", @"playerLayer", nil];
+        disallowedSelectorList = [NSSet setWithObjects:@"retain", @"release", @"autorelease", @"forwardInvocation:", @"delegate", @"dataSource", @"playerLayer", @"attachView:", nil];
     });
     
     unsigned int count;
@@ -283,7 +287,8 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
         NSString *name =  NSStringFromSelector(selector);
         
         NSString *selectorName = NSStringFromSelector(selector);
-        if ([disallowedSelectorList containsObject:selectorName] || [name hasPrefix:@"br_"]) {
+        
+        if ([disallowedSelectorList containsObject:selectorName] || [name hasPrefix:@"br_"] || ![self respondsToSelector:selector]) {
             continue;
         }
         
@@ -294,6 +299,8 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
     if (originalImplementation) {
         class_addMethod(view.class, NSSelectorFromString(BRPlayerForwardInvocationSelectorName), originalImplementation, "v@:@");
     }
+    
+    objc_setAssociatedObject(view, &kBRPlayerInner, self, OBJC_ASSOCIATION_ASSIGN);
 }
 
 #pragma mark - private
@@ -572,9 +579,9 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 
 @end
 
-@interface BRPlayerView () <BRPlayerViewDeleate, BRPlayerCacheDataSource>
+@interface BRPlayerView () <BRPlayerCacheDataSource>
 
-@property (nonatomic, strong) BRPlayer *testPlayer;
+@property (nonatomic, strong) BRPlayer *player;
 
 @end
 
@@ -583,11 +590,10 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (instancetype)initWithURL:(NSURL *)URL {
     self = [super init];
     if (self) {
-        _testPlayer = [[BRPlayer alloc] initWithURL:URL];
-        _testPlayer.dataSource = self;
-        [self.layer addSublayer:_testPlayer.playerLayer];
-        _testPlayer.playerLayer.backgroundColor = [UIColor redColor].CGColor;
-        [_testPlayer attachView:self];
+        _player = [[BRPlayer alloc] initWithURL:URL];
+        _player.dataSource = self;
+        [_player attachView:self];
+        [self.layer addSublayer:_player.playerLayer];
     }
     return self;
 }
@@ -595,7 +601,7 @@ typedef void (^ObserveBlock) (NSString *keyPath, id object, NSDictionary<NSKeyVa
 - (void)layoutSubviews {
     [super layoutSubviews];
     
-    _testPlayer.playerLayer.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
+    _player.playerLayer.frame = CGRectMake(0, 0, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame));
     
 }
 

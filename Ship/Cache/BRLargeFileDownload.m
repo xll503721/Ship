@@ -253,7 +253,7 @@ static NSString *kBRLargeFileDownloadRangeKey = @"kBRLargeFileDownloadRangeKey";
 }
 
 - (void)initRequestWithURL:(NSURL *)URL {
-    
+
     if (!URL) {
         NSLog(@"URL is nil, ignore URL request");
         return;
